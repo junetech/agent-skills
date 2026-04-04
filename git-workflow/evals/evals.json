@@ -1,0 +1,23 @@
+{
+  "skill_name": "git-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Can you help me draft a commit message? I've staged some changes to the schedule model.",
+      "expected_output": "Should produce a Conventional Commits formatted message with type, scope, title under 50 chars, and body with bullet points",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Review what I've staged and tell me what's going on. I'm worried I might have introduced something buggy.",
+      "expected_output": "Should run git diff --staged, summarize changes, and flag potential issues like bugs/security/performance",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I need a commit message for these staged changes. Make sure it follows conventional commits.",
+      "expected_output": "Should produce properly formatted commit with type(scope): summary format, under 50 char title, character count validation",
+      "files": []
+    }
+  ]
+}
