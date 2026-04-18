@@ -37,6 +37,8 @@ Run `git diff --staged`, then draft a Conventional Commits message:
 
 **Title**:
 - **MUST be ≤49 characters** (hard limit)
+  - Linux: `echo -n "title" | wc -c`
+  - PowerShell: `pwsh -NoProfile -Command '("title").Length'`
 - Use imperative mood ("fix", not "fixed")
 - No trailing period
 - **ALWAYS output: `Title: XX characters ✓`**
