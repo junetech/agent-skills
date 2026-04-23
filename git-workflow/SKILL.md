@@ -37,13 +37,15 @@ Run `git diff --staged`, then draft a Conventional Commits message:
 
 **Title**:
 - **MUST be ≤49 characters** (hard limit)
-  - Linux: `echo -n "title" | wc -c`
-  - PowerShell: `pwsh -NoProfile -Command '("title").Length'`
+  - Use agent to devise a concise title using commands:
+    - Linux: `echo -n "title" | wc -c`
+    - PowerShell: `pwsh -NoProfile -Command '("title").Length'`
 - Use imperative mood ("fix", not "fixed")
 - No trailing period
 - **ALWAYS output: `Title: XX characters ✓`**
 
 **Body**: 2-4 bullets explaining what/why
+- **Do NOT wrap body lines** at 50-60 or 72 characters. Write each bullet as a single line regardless of length; let the terminal/viewer handle soft-wrapping.
 
 ### Output Structure
 
