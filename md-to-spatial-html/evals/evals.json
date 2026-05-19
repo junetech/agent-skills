@@ -1,0 +1,25 @@
+{
+  "skill_name": "md-to-spatial-html",
+  "evals": [
+    {
+      "id": 1,
+      "name": "rich-plan",
+      "prompt": "Convert this plan file to a spatial HTML peer alongside it: <ABS_PATH>/test1_rich_plan.md . Keep the markdown unchanged.",
+      "expected_output": "A new .html file at <ABS_PATH>/test1_rich_plan.html that uses the spatial components (TL;DR box, comparison cards, decision strip, color-coded risk cards, ideally a module map SVG or similar). The original .md is byte-identical.",
+      "files": ["test1_rich_plan.md"]
+    },
+    {
+      "id": 2,
+      "name": "linked-pair",
+      "prompt": "Convert this plan and its companion detail file to spatial HTML peers: <ABS_PATH>/test2_plan.md and <ABS_PATH>/test2_detail.md . Keep both markdown files unchanged.",
+      "expected_output": "Two new .html files (test2_plan.html, test2_detail.html). Each sidebar links to the other. Each footer references its own .md source.",
+      "files": ["test2_plan.md", "test2_detail.md"]
+    },
+    {
+      "id": 3,
+      "name": "prose-rfc-restraint",
+      "prompt": "Convert this RFC to spatial HTML: <ABS_PATH>/test3_rfc.md . Keep the markdown unchanged.",
+      "expected_output": "A spatial HTML peer. Since the RFC is mostly prose with only one decision section and one small comparison, the HTML should use the appropriate components for those spatial moments (e.g. decision strip, possibly a small comparison) but NOT fabricate diagrams, SVGs, or matrices where the source has no spatial content. Every paragraph of the original is preserved."
+    }
+  ]
+}
