@@ -1,2 +1,8 @@
 # Ignore directories in .codex
 .system/
+
+
+# Python
+
+__pycache__
+*.pyc
