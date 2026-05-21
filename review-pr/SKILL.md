@@ -1,18 +1,19 @@
 ---
 name: review-pr
-version: 1.0.0
 description: |
-  Pre-landing PR review. Analyzes diff against the base branch for SQL safety, LLM trust
-  boundary violations, race conditions, and other structural issues that tests don't catch.
-  Language-agnostic — detects project language automatically and applies relevant patterns.
-allowed-tools:
-  - Bash
-  - Read
-  - Edit
-  - Write
-  - Grep
-  - Glob
-  - AskUserQuestion
+  Pre-landing PR / branch review against the base branch. Use when the user wants to
+  review a pull request, audit a diff before pushing or merging, or asks "review my PR",
+  "review this branch", "check before I merge", "PR 리뷰해줘", "이 브랜치 리뷰", or
+  similar. Scans for SQL injection and data-safety issues, race conditions and TOCTOU,
+  LLM output trust-boundary violations, enum/state completeness, magic numbers, dead
+  code, crypto weaknesses, time-window bugs, type-coercion at boundaries, and
+  frontend/design anti-patterns when CSS/HTML/JSX changes. Language-agnostic —
+  auto-detects project language(s) and applies relevant patterns. Includes a fix-first
+  flow that auto-applies mechanical fixes and batches ambiguous ones for user approval.
+  NOT for drafting commit messages or reviewing staged changes for a single commit
+  (use git-workflow); NOT for reviewing arbitrary code outside a branch diff.
+compatibility: Requires git and the gh CLI. Designed for Claude Code or hosts that support the AskUserQuestion tool.
+allowed-tools: Bash Read Edit Write Grep Glob AskUserQuestion
 ---
 
 ## Step 0: Detect base branch
@@ -67,7 +68,7 @@ Print: `Languages detected: [list]`
 
 ## Step 2: Read the checklist
 
-Read `.claude/skills/review-pr/checklist.md`.
+Read `checklist.md`.
 
 **If the file cannot be read, STOP and report the error.** Do not proceed without the checklist.
 
@@ -114,7 +115,7 @@ git diff origin/<base> --name-only | grep -E '\.(css|scss|sass|less|html|jsx|tsx
 
 1. Check for `DESIGN.md` or `design-system.md` in the repo root. If found, read it — patterns explicitly blessed there are NOT flagged. If not found, use universal design principles.
 
-2. Read `.claude/skills/review-pr/design-checklist.md`. If not found, skip design review with a note.
+2. Read `design-checklist.md`. If not found, skip design review with a note.
 
 3. Read each changed frontend file in full (not just diff hunks).
 
