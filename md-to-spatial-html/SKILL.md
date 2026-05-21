@@ -1,6 +1,6 @@
 ---
 name: md-to-spatial-html
-description: Convert one or more markdown files (typically plans, design docs, specs, reviews) into self-contained spatial HTML peers alongside the originals — sticky sidebar TOC, inline SVG diagrams, color-coded risk cards, comparison cards, scenario matrices — based on the html-effectiveness principles (https://thariqs.github.io/html-effectiveness/). Use when the user says "make this HTML", "convert to HTML", "spatial HTML version", "이거 HTML로 만들어", "plan을 HTML로", or similar. Always preserves the .md as the authoritative copy and writes the .html next to it. Keywords: html-effectiveness, spatial html, sidebar TOC, inline SVG, plan to html, convert markdown.
+description: Convert one or more markdown files (typically plans, design docs, specs, reviews) into self-contained spatial HTML peers alongside the originals — sticky sidebar TOC, inline SVG diagrams, color-coded risk cards, comparison cards, scenario matrices — based on the html-effectiveness principles (https://thariqs.github.io/html-effectiveness/). Use when the user says "make this HTML", "convert to HTML", "spatial HTML version", "이거 HTML로 만들어", "plan을 HTML로", or similar. Always preserves the .md as the authoritative copy and writes the .html next to it. Not for single-paragraph notes, ad-hoc HTML mockups not derived from a .md, or passing mentions of HTML. Keywords: html-effectiveness, spatial html, sidebar TOC, inline SVG, plan to html, convert markdown.
 ---
 
 # md → spatial HTML
@@ -52,7 +52,7 @@ When you spot this shape in the markdown, render it as the HTML on the right. Th
 1. **Read every source .md in full.** No summarizing, no skimming — you need the verbatim content to round-trip it.
 2. **List the spatial moments.** Before writing any HTML, jot (mentally) every place the markdown is flattening something: lists that are actually diagrams, tables that are actually matrices, decisions that are actually cards, risks that need severity colors. This list drives your component choices.
 3. **Plan the sidebar.** Sections (anchor list) + glossary (acronyms) + peer links (sibling docs). Keep section labels short — they have to fit in 240px.
-4. **Copy `template.html` from this skill directory** (`~/.claude/skills/md-to-spatial-html/template.html`) as the starting skeleton. It has all the CSS classes wired up: `.tldr`, `.card`, `.decision`, `.risk.sev-{high,med,low}`, `.scenario-matrix`, `.pipeline`, `.partition-fig`, `.modmap`, `.helpers`, etc.
+4. **Copy `assets/template.html` from this skill directory** as the starting skeleton. It has all the CSS classes wired up: `.tldr`, `.card`, `.decision`, `.risk.sev-{high,med,low}`, `.scenario-matrix`, `.pipeline`, `.partition-fig`, `.modmap`, `.helpers`, etc.
 5. **Fill the body** per the source .md. Replace placeholders, add components where the transform table calls for them.
 6. **Verify before reporting done:**
    - Every .md section has an HTML counterpart (use the .md's TOC as your checklist).
@@ -81,7 +81,3 @@ If the user wants it richer ("add a chart for the obj trajectory") — that's ou
 - **Replacing or deleting the .md** — never.
 - **Generic titles** — use the document's actual title; if missing, derive from filename.
 - **Sidebar that doesn't link siblings** when converting multiple related files.
-
-## Reference example
-
-For a concrete two-file conversion (plan + companion detail), see `plans/20260510/pw_cp_port_plan.html` and `plans/20260510/pw_cp_port_plan_detail.html` in the `ffc_ddw_sum_et` repo. They demonstrate every component class in `template.html`: 5-region SVG bands, module map, scenario matrix, decision strips, color-coded risk cards, sidebar glossary, peer links, footer attribution.
