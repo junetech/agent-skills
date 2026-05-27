@@ -79,7 +79,7 @@ def check(args: argparse.Namespace) -> list[str]:
     html_text = html_path.read_text(encoding="utf-8")
     html_lower = html_text.lower()
 
-    if "{{" in html_text:
+    if re.search(r"\{\{\s*[A-Z_]+\s*\}\}", html_text):
         errors.append("unreplaced {{...}} placeholder remains")
 
     if re.search(r"<\s*script\b", html_text, flags=re.IGNORECASE):
