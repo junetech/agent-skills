@@ -9,6 +9,8 @@
 
 ## `skills-ref/` — Skill validation/management CLI tool
 
+[reference](https://github.com/agentskills/agentskills/tree/main/skills-ref)
+
 **Requirements:** [uv](https://docs.astral.sh/uv/) must be installed on the system.
 
 - **This repo's internal tool only.** Not meant for external projects — only for validating and managing skill directories under `agent-skills/`.
