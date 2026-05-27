@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Starting skeleton for the md-to-spatial-html skill.
-  Copy this file, replace {{PLACEHOLDERS}}, and add/remove components per the source .md.
+  Copy this file, replace document-specific text, and add/remove components per the source .md.
   All component classes used here are pre-styled below — do not invent new class names
   unless the source needs a shape this template doesn't already cover.
 
@@ -11,7 +11,7 @@
     .grid-2                                          two-column grid
     .decisions > .decision                           decision strip rows
     .decision.deferred                               muted variant for out-of-scope
-    .scenario-matrix                                 2-axis variant grid
+    .scenario-matrix                                 2-axis or N-axis variant grid
     .pipeline                                        horizontal step→step flow
     .partition-fig                                   wrapper for inline SVG bands
     .modmap                                          wrapper for inline SVG module map
@@ -28,7 +28,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{TITLE}}</title>
+<title>Document title</title>
 <style>
   :root {
     --bg: #fafaf7;
@@ -86,8 +86,8 @@
   main { padding: 36px 48px 80px; max-width: 920px; }
   @media (max-width: 900px) { main { padding: 24px 20px 60px; } }
 
-  h1 { font-size: 28px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em; }
-  h2 { font-size: 19px; margin: 40px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); letter-spacing: -.005em; }
+  h1 { font-size: 28px; line-height: 1.25; margin: 0 0 6px; letter-spacing: 0; }
+  h2 { font-size: 19px; margin: 40px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); letter-spacing: 0; }
   h3 { font-size: 15.5px; margin: 26px 0 10px; }
   h4 { font-size: 13.5px; margin: 18px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   p { margin: 10px 0; }
@@ -162,7 +162,7 @@
   .decision.deferred .key { color: var(--faint); }
 
   .scenario-matrix {
-    display: grid; grid-template-columns: 80px 1fr 1fr; gap: 8px; margin: 16px 0; max-width: 540px;
+    display: grid; grid-template-columns: var(--matrix-cols, 80px repeat(2, minmax(120px, 1fr))); gap: 8px; margin: 16px 0; max-width: 720px;
     font-size: 13.5px;
   }
   .scenario-matrix .head, .scenario-matrix .row-head {
@@ -234,35 +234,37 @@
 <div class="layout">
 
 <nav class="toc">
-  <div class="title">{{DOC_TITLE}}</div>
-  <div class="crumb">{{REL_PATH}}</div>
+  <div class="title">Document title</div>
+  <div class="crumb">source.md</div>
   <!-- Peer links (omit if no siblings):
-  <a href="{{PEER_HTML}}" style="color: var(--accent); font-size: 12.5px;">→ {{PEER_LABEL}}</a>
+  <a href="peer.html" style="color: var(--accent); font-size: 12.5px;">→ Peer document</a>
   -->
 
   <div class="label">Sections</div>
-  <a href="#tldr">TL;DR</a>
+  <a href="#tldr">At a glance</a>
   <!-- one anchor per <h2 id="..."> -->
 
+  <!-- Omit the glossary block entirely if the source has no acronyms or jargon.
   <div class="label">Glossary</div>
   <ul class="plain">
-    <li><b>{{ACRONYM}}</b> — {{expansion}}</li>
+    <li><b>TERM</b> — escaped definition</li>
   </ul>
+  -->
 </nav>
 
 <main>
 
-<h1>{{H1}}</h1>
+<h1>Document title</h1>
 <div class="meta">
-  <span>{{REL_PATH}}</span>
-  <!-- · <span>Companion: <a href="{{PEER_HTML}}">{{PEER_LABEL}}</a></span> -->
+  <span>source.md</span>
+  <!-- · <span>Companion: <a href="peer.html">Peer document</a></span> -->
 </div>
 
 <section id="tldr" class="tldr">
   <h4>At a glance</h4>
   <ul>
-    <li>{{Key point 1}}</li>
-    <li>{{Key point 2}}</li>
+    <li>Replace with an escaped key point from the source, or delete this section.</li>
+    <li>Keep source prose elsewhere in the body; this box is an added spatial summary.</li>
   </ul>
 </section>
 
@@ -298,15 +300,17 @@
 </div>
 -->
 
-<!-- Scenario matrix (2×N grid)
+<!-- Scenario matrix (set --matrix-cols to match the number of headers)
 <h3>Grid</h3>
-<div class="scenario-matrix">
+<div class="scenario-matrix" style="--matrix-cols: 80px repeat(3, minmax(120px, 1fr));">
   <div></div>
   <div class="head">{{Col A}}</div>
   <div class="head">{{Col B}}</div>
+  <div class="head">{{Col C}}</div>
   <div class="row-head">{{Row 1}}</div>
   <div class="cell"><div class="name">{{name_a1}}</div><div class="desc">{{desc}}</div></div>
   <div class="cell"><div class="name">{{name_b1}}</div><div class="desc">{{desc}}</div></div>
+  <div class="cell"><div class="name">{{name_c1}}</div><div class="desc">{{desc}}</div></div>
 </div>
 -->
 
@@ -340,12 +344,14 @@
 </figure>
 -->
 
-<!-- Inline SVG module map — MANDATORY when source has a file-layout / module / architecture section (see SKILL.md rule 6).
+<!-- Inline SVG module map — MANDATORY when source has a file-layout / module / architecture section (see SKILL.md rule 7).
      This is the load-bearing component people most often miss. The fully-worked example
      below shows the common shape: zone-grouped boxes (green=new, amber=existing,
      blue=reused) with solid arrows for hard wiring and dashed for soft reuse.
      Adapt zone count, box count, and arrow styling to the source — but do NOT
-     substitute a styled list or a plain table.
+     substitute a styled list or a plain table. Keep labels short inside SVG
+     boxes; preserve exact long paths and source bullets as escaped prose or a
+     table below the diagram.
 
 <figure class="modmap">
   <svg viewBox="0 0 760 280" width="100%" style="max-width: 740px; display:block; margin:0 auto;" xmlns="http://www.w3.org/2000/svg">
@@ -355,21 +361,21 @@
       </marker>
     </defs>
     <rect x="20"  y="20" width="320" height="200" fill="#f4faee" stroke="#c2d5b5" rx="6"/>
-    <text x="180" y="40" font-size="12" font-weight="700" text-anchor="middle" fill="#1e7a3a" font-family="system-ui">{{ZONE A — e.g. "new package"}}</text>
+    <text x="180" y="40" font-size="12" font-weight="700" text-anchor="middle" fill="#1e7a3a" font-family="system-ui">{{ZONE A}}</text>
     <rect x="40"  y="56"  width="280" height="32" fill="#fff" stroke="#2454b8" rx="4"/>
-    <text x="180" y="76"  font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{file_a.py — role}}</text>
+    <text x="180" y="76"  font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{short_label_a}}</text>
     <rect x="40"  y="96"  width="280" height="32" fill="#fff" stroke="#2454b8" rx="4"/>
-    <text x="180" y="116" font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{file_b.py — role}}</text>
+    <text x="180" y="116" font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{short_label_b}}</text>
     <rect x="40"  y="136" width="280" height="32" fill="#fff" stroke="#2454b8" rx="4"/>
-    <text x="180" y="156" font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{file_c.py — role}}</text>
+    <text x="180" y="156" font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{short_label_c}}</text>
     <rect x="400" y="20"  width="340" height="120" fill="#fbf3eb" stroke="#e7d5c5" rx="6"/>
-    <text x="570" y="40"  font-size="12" font-weight="700" text-anchor="middle" fill="#a55a07" font-family="system-ui">{{ZONE B — e.g. "wired into existing"}}</text>
+    <text x="570" y="40"  font-size="12" font-weight="700" text-anchor="middle" fill="#a55a07" font-family="system-ui">{{ZONE B}}</text>
     <rect x="420" y="56"  width="300" height="32" fill="#fff" stroke="#a55a07" rx="4"/>
     <text x="570" y="76"  font-size="11.5" text-anchor="middle" font-family="ui-monospace, monospace">{{existing_file_1}}</text>
     <rect x="420" y="96"  width="300" height="32" fill="#fff" stroke="#a55a07" rx="4"/>
     <text x="570" y="116" font-size="11.5" text-anchor="middle" font-family="ui-monospace, monospace">{{existing_file_2}}</text>
     <rect x="400" y="160" width="340" height="100" fill="#e6edfa" stroke="#2454b8" rx="6"/>
-    <text x="570" y="180" font-size="12" font-weight="700" text-anchor="middle" fill="#1f5a8a" font-family="system-ui">{{ZONE C — e.g. "reused without copy"}}</text>
+    <text x="570" y="180" font-size="12" font-weight="700" text-anchor="middle" fill="#1f5a8a" font-family="system-ui">{{ZONE C}}</text>
     <rect x="420" y="196" width="300" height="32" fill="#fff" stroke="#1f5a8a" rx="4"/>
     <text x="570" y="216" font-size="11.5" text-anchor="middle" font-family="ui-monospace, monospace">{{shared_file}}</text>
     <line x1="320" y1="72"  x2="420" y2="72"  stroke="#7a7a72" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -443,7 +449,7 @@
 -->
 
 <hr>
-<p style="font-size: 12px; color: var(--faint);">Source: <code>{{REL_PATH}}</code> (markdown remains authoritative; this HTML is a spatial view).</p>
+<p style="font-size: 12px; color: var(--faint);">Source: <code>source.md</code> (markdown remains authoritative; this HTML is a spatial view).</p>
 
 </main>
 </div>
