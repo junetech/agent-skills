@@ -1,13 +1,13 @@
 # Agent Skills
 
 여러 AI 코딩 에이전트에서 공통으로 재사용할 수 있는 skill 저장소입니다.
-현재는 Claude Code, Codex, Kilo 같은 도구에서 같은 skill을 심볼릭 링크로 연결해
+현재는 Claude Code, Codex, OpenCode 같은 도구에서 같은 skill을 symbolic link로 연결해
 한 곳에서 관리하는 용도를 목표로 합니다.
 
 ## 핵심 아이디어
 
 - 도구별로 같은 skill을 중복 관리하지 않게 합니다.
-- 검증한 워크플로우를 한 저장소에서 업데이트하고 재사용할 수 있습니다.
+- 검증한 workflow를 한 저장소에서 업데이트하고 재사용할 수 있습니다.
 - 각 에이전트의 skill 디렉터리에는 링크만 두고 실제 내용은 이 저장소에서 관리합니다.
 
 ## 포함된 Skills
@@ -40,7 +40,7 @@ agent-skills/
 ├── review-pr/
 │   ├── SKILL.md
 │   ├── checklist.md
-│   └── design_checklist.md
+│   └── design-checklist.md
 ├── skill-creator/
 │   └── SKILL.md
 └── .system/               # 로컬/도구 생성 영역, 버전 관리 제외
@@ -55,14 +55,14 @@ agent-skills/
 가장 보수적인 방식입니다. 각 에이전트의 skill 디렉터리 안에서 필요한 skill만
 개별 심볼릭 링크로 연결합니다.
 
-#### macOS / Linux
+**macOS / Linux** command
 
 ```bash
 ln -s /path/to/agent-skills/git-workflow ~/.codex/skills/git-workflow
 ln -s /path/to/agent-skills/review-pr ~/.codex/skills/review-pr
 ```
 
-#### PowerShell
+**PowerShell** command
 
 ```powershell
 New-Item -ItemType SymbolicLink `
@@ -82,18 +82,16 @@ skill 폴더 자체를 이 저장소로 연결할 수도 있습니다.
 이 방식은 skill별 링크를 여러 개 만들 필요가 없고, 저장소에 추가한 skill이 바로
 해당 도구에 반영된다는 장점이 있습니다.
 
-#### macOS / Linux
-
 기존 skill 폴더가 있으면 먼저 백업한 뒤 연결하는 편이 안전합니다.
+
+**macOS / Linux** command
 
 ```bash
 mv ~/.codex/skills ~/.codex/skills.backup
 ln -s /path/to/agent-skills ~/.codex/skills
 ```
 
-#### PowerShell
-
-기존 skill 폴더가 있으면 먼저 이름을 바꿔 백업한 뒤 연결합니다.
+**PowerShell** command
 
 ```powershell
 Move-Item "$HOME\.codex\skills" "$HOME\.codex\skills.backup"
