@@ -20,16 +20,17 @@ Convert markdown into self-contained HTML peers that exploit the medium's spatia
 
 > Diffs and call-graphs are spatial information; markdown flattens them.
 
-Your job: take a .md that flattens 2D/relational content into linear bullets, and re-render it as HTML that makes the shape visible at a glance — without dropping a single sentence of the original.
+Your job: take a .md that flattens 2D/relational content into linear bullets, and re-render it as HTML that makes the shape visible at a glance. Spatial components are additive: the original text still has to survive in escaped HTML form.
 
 ## Non-negotiable rules
 
 1. **Keep the .md.** It's the source of truth. Write a sibling `.html` with the same basename, same directory. Never delete or overwrite the .md.
-2. **One file, no externals.** Inline CSS in `<style>`. Inline SVG. No CDN fonts, no scripts (CSS handles sticky/collapsible). The .html must open by double-click anywhere.
-3. **No content loss.** Every paragraph, code block, table cell, and list item in the .md must survive in the .html. You're adding spatial structure on top, not summarizing.
+2. **One file, no externals.** Inline CSS in `<style>`. Inline SVG. No CDN fonts, no JavaScript, no external assets. The .html must open by double-click anywhere.
+3. **No content loss.** Every paragraph, code block, table cell, and list item in the .md must survive in the .html. You're adding spatial structure on top, not summarizing or replacing source prose.
 4. **Link the peers.** When converting a set of related files (plan + detail, etc.), each .html links to its siblings in the sidebar.
 5. **Footer attribution.** End every generated file with `Source: <path>.md (markdown remains authoritative; this HTML is a spatial view).`
-6. **File/module structure → inline SVG, not a styled list.** If the source describes how files, modules, packages, or components relate to each other (a "File layout" / "Module map" / "Architecture" / "What lives where" section), you MUST draw it as an inline `<svg>` boxes-and-arrows module map. Do not substitute a styled list (`.file-list`, `.file-row`, etc.) or a plain `<table>` of filenames — those flatten exactly the spatial information SVG exists to preserve. The template includes a `.modmap` starter snippet — use it. Before declaring the work done, search the source `.md` for `## File layout`, `## Module`, `## Architecture`, or similar; if any of those exist and your HTML has zero `<svg>` for that section, go back and draw it.
+6. **Escape markdown-origin text.** Text copied from markdown into HTML text nodes or attributes must be HTML-escaped (`&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`, quotes in attributes). Code fences and inline code are escaped inside `<code>`.
+7. **File/module structure → inline SVG plus preserved source text.** If the source describes how files, modules, packages, or components relate to each other (a "File layout" / "Module map" / "Architecture" / "What lives where" section), draw it as an inline `<svg>` boxes-and-arrows module map inside `<figure class="modmap">`. Do not substitute a styled list (`.file-list`, `.file-row`, etc.) or a plain `<table>` of filenames. Keep the original file/module bullets or equivalent escaped prose below the diagram so no source content is lost.
 
 ## When to fire vs not
 
@@ -50,7 +51,7 @@ When you spot this shape in the markdown, render it as the HTML on the right. Th
 | 2-axis grid of variants (e.g. `unfixed × pf_method`) | **Matrix grid** (CSS grid, 2D cells) instead of a flat markdown table |
 | Numbered list of risks / concerns | **Risk cards** with color-coded severity badges (red/amber/green) and a left border in the same color |
 | "Decision: X. Reason: Y. Scope: Z." patterns | **Decision strip**: `key | value` rows with accent left border |
-| File/module/class relationships (load-bearing — see rule 6) | **Inline SVG module map** — mandatory, not optional. Boxes & arrows with arrowhead markers, grouped by zone (new / existing / external) when there are >1 zones. Not a styled list. Not a `<table>` of filenames. |
+| File/module/class relationships (load-bearing — see rule 7) | **Inline SVG module map** plus preserved source text — mandatory, not optional. Boxes & arrows with arrowhead markers, grouped by zone (new / existing / external) when there are >1 zones. Not a styled list. Not a `<table>` of filenames. |
 | Sequence / pipeline / data flow | **Horizontal flow row** with step chips and arrow separators |
 | Long pseudocode / config block (>30 lines) | `<details open>` wrapping a `<pre>` so it can be folded |
 | Acronyms / domain jargon | **Glossary list at the bottom of the sidebar** |
@@ -64,15 +65,17 @@ When you spot this shape in the markdown, render it as the HTML on the right. Th
 2. **List the spatial moments.** Before writing any HTML, jot (mentally) every place the markdown is flattening something: lists that are actually diagrams, tables that are actually matrices, decisions that are actually cards, risks that need severity colors. This list drives your component choices.
 3. **Plan the sidebar.** Sections (anchor list) + glossary (acronyms) + peer links (sibling docs). Keep section labels short — they have to fit in 240px.
 4. **Copy `assets/template.html` from this skill directory** as the starting skeleton. It has all the CSS classes wired up: `.tldr`, `.card`, `.decision`, `.risk.sev-{high,med,low}`, `.scenario-matrix`, `.pipeline`, `.partition-fig`, `.modmap`, `.helpers`, etc.
-5. **Fill the body** per the source .md. Replace placeholders, add components where the transform table calls for them.
+5. **Fill the body** per the source .md. Escape markdown-origin text, replace placeholders, delete unused example snippets, and add components where the transform table calls for them.
 6. **Verify before reporting done:**
    - Every .md section has an HTML counterpart (use the .md's TOC as your checklist).
    - Every code block survived (count them if uncertain).
-   - The file opens standalone — no `<link href="...">`, no `<script src="...">`.
+   - The file opens standalone — no `<link ...>`, no `<script ...>`, no remote asset URLs.
+   - No `{{...}}` placeholder remains.
    - Sidebar anchor links match `id` attributes in the body.
    - Peer links resolve (when converting multiple files).
    - Footer attribution line is present.
-   - **SVG audit (rule 6).** If the source has any file-layout / module / architecture section, your HTML has at least one `<svg>` for that section. If it doesn't, you're not done — go draw it before reporting.
+   - **SVG audit (rule 7).** If the source has any file-layout / module / architecture section, your HTML has `<figure class="modmap">` containing `<svg>`. If it doesn't, you're not done.
+   - When this skill's validation script is available, run `python md-to-spatial-html/scripts/validate_output.py --source <source.md> --html <output.html>` and add `--peer`, `--require-modmap`, or `--forbid-svg` as appropriate.
 
 ## Iteration knobs
 
@@ -80,15 +83,16 @@ If the user has aesthetic preferences after seeing the first output, the templat
 
 If the user wants the HTML simpler (e.g. "drop the SVG, just use a table"), they're telling you the spatial transform was wrong for that section. Demote the diagram to a table; don't argue.
 
-If the user wants it richer ("add a chart for the obj trajectory") — that's outside this skill's scope (no data dependency). Either embed a static SVG or punt to "I can render that with a real plotting tool if you give me the data."
+If the user wants it richer ("add a chart for the obj trajectory") — that's outside this skill's scope unless the source contains the data. Either embed a static inline SVG from the provided data or ask for the data.
 
 ## Anti-patterns
 
 - **Pandoc-style conversion** — pandoc preserves linear shape. This skill is about *transforming* shape. If you find yourself writing 1:1 `<p>` ↔ paragraph, you've missed the point.
-- **Inventing a styled list (`.file-list`, `.file-row`, etc.) for a file/module section instead of drawing the SVG module map.** This is the failure mode rule 6 exists to prevent. If you catch yourself reaching for a fresh class name to lay out filenames in a grid, stop and draw the boxes-and-arrows instead. The template stays rigid on purpose — channel inventive energy into the SVG itself, not into new component classes.
+- **Inventing a styled list (`.file-list`, `.file-row`, etc.) for a file/module section instead of drawing the SVG module map.** This is the failure mode rule 7 exists to prevent. If you catch yourself reaching for a fresh class name to lay out filenames in a grid, stop and draw the boxes-and-arrows instead. The template stays rigid on purpose — channel inventive energy into the SVG itself, not into new component classes.
 - **External fonts/CDN** — breaks double-click-to-open + offline use.
-- **JavaScript for things CSS handles** — sticky positioning, `<details>` collapse, hover effects. Keep it static. Only reach for JS for genuine interactivity (sliders, drag-drop) and prefer not to.
+- **JavaScript** — this skill emits static, double-clickable HTML only. Use CSS, `<details>`, and inline SVG.
 - **Dropping content because a diagram supersedes it** — the prose still has to be there. The diagram is in addition to, not instead of.
+- **Unescaped markdown text** — raw `<`, `>`, and `&` from source text can break the generated HTML or change meaning.
 - **Replacing or deleting the .md** — never.
 - **Generic titles** — use the document's actual title; if missing, derive from filename.
 - **Sidebar that doesn't link siblings** when converting multiple related files.
