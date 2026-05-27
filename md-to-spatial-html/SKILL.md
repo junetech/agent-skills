@@ -1,6 +1,17 @@
 ---
 name: md-to-spatial-html
-description: Convert one or more markdown files (typically plans, design docs, specs, reviews) into self-contained spatial HTML peers alongside the originals — sticky sidebar TOC, inline SVG diagrams, color-coded risk cards, comparison cards, scenario matrices — based on the html-effectiveness principles (https://thariqs.github.io/html-effectiveness/). Use when the user says "make this HTML", "convert to HTML", "spatial HTML version", "이거 HTML로 만들어", "plan을 HTML로", or similar. Always preserves the .md as the authoritative copy and writes the .html next to it. Not for single-paragraph notes, ad-hoc HTML mockups not derived from a .md, or passing mentions of HTML. Keywords: html-effectiveness, spatial html, sidebar TOC, inline SVG, plan to html, convert markdown.
+description: >-
+  Convert one or more markdown files (typically plans, design docs, specs,
+  reviews) into self-contained spatial HTML peers alongside the originals —
+  sticky sidebar TOC, inline SVG diagrams, color-coded risk cards, comparison
+  cards, scenario matrices — based on the html-effectiveness principles
+  (https://thariqs.github.io/html-effectiveness/). Use when the user says "make
+  this HTML", "convert to HTML", "spatial HTML version", "이거 HTML로 만들어",
+  "plan을 HTML로", or similar. Always preserves the .md as the authoritative copy
+  and writes the .html next to it. Not for single-paragraph notes, ad-hoc HTML
+  mockups not derived from a .md, or passing mentions of HTML. Keywords:
+  html-effectiveness, spatial html, sidebar TOC, inline SVG, plan to html,
+  convert markdown.
 ---
 
 # md → spatial HTML
