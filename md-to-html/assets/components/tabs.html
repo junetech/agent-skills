@@ -1,0 +1,59 @@
+<!--
+  tabs.html — Static CSS-only tabbed content (document mode)
+
+  WHEN TO USE: Source has multiple code variants, language versions, or
+  mutually-exclusive sections that should be tabbed without JS.
+  Uses :target or radio-button trick — works with JS disabled.
+
+  WHAT TO FILL:
+  - Replace TAB_N_ID with unique ids like "tab-python", "tab-go"
+  - Replace TAB_N_LABEL with visible tab labels
+  - Replace TAB_N_CONTENT with the tab body HTML
+  - Adjust tab count (add/remove tab blocks)
+
+  CLASS PREFIX: mdh-tabs (no conflict with base.html classes)
+-->
+<style>
+  .mdh-tabs { margin: 16px 0; }
+  .mdh-tab-list { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin: 0; padding: 0; list-style: none; }
+  .mdh-tab-list a {
+    display: block; padding: 7px 16px; font-size: 13px; font-weight: 500;
+    color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -2px;
+    text-decoration: none;
+  }
+  .mdh-tab-list a:hover { color: var(--text); }
+  .mdh-tab-panel { display: none; padding: 16px 0; }
+  /* :target trick: panel shown when its id is the URL fragment */
+  .mdh-tab-panel:target { display: block; }
+  /* Fallback: first panel always visible when no :target matches */
+  .mdh-tab-panel:first-of-type { display: block; }
+  .mdh-tab-panel:target ~ .mdh-tab-panel:first-of-type { display: none; }
+</style>
+
+<div class="mdh-tabs">
+  <ul class="mdh-tab-list">
+    <li><a href="#TAB_1_ID">TAB_1_LABEL</a></li>
+    <li><a href="#TAB_2_ID">TAB_2_LABEL</a></li>
+    <!-- add more tabs as needed -->
+  </ul>
+
+  <div id="TAB_1_ID" class="mdh-tab-panel">
+    TAB_1_CONTENT
+  </div>
+  <div id="TAB_2_ID" class="mdh-tab-panel">
+    TAB_2_CONTENT
+  </div>
+</div>
+
+<!--
+  Alternative: use <details> for accordion-style collapsible tabs (simpler, no JS):
+
+  <details open>
+    <summary>Section A</summary>
+    <p>Content here.</p>
+  </details>
+  <details>
+    <summary>Section B</summary>
+    <p>Content here.</p>
+  </details>
+-->

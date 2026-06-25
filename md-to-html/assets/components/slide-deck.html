@@ -1,0 +1,138 @@
+<!--
+  slide-deck.html — Keyboard-navigable slide deck (deck mode, light JS)
+
+  WHEN TO USE: Source is a presentation outline, lecture notes, or concept explainer
+  that should be stepped through sequentially.
+
+  INVARIANTS (must hold):
+  - no-JS fallback: slides stack vertically in normal document flow (invariant 8).
+    Content is in static DOM; JS only adds navigation behavior.
+  - No network calls.
+  - JS uses MDH namespace + IIFE.
+
+  WHAT TO FILL:
+  - Replace DECK_TITLE
+  - Add/remove .mdh-slide divs; each gets a data-slide-index (0-based)
+  - Fill slide content; keep it concise (1 concept per slide)
+  - SOURCE_PATH for footer attribution
+
+  CLASS PREFIX: mdh-deck, mdh-slide (no conflict with base.html classes)
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DECK_TITLE</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+    --text: #e8e8f0; --muted: #9090a8; --accent: #6c8cff;
+    --ok: #5fb37a; --warn: #f0a840; --danger: #e57373;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+
+  /* No-JS fallback: slides visible as vertical stack */
+  .mdh-deck { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+  .mdh-slide {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 40px 48px; margin-bottom: 24px; min-height: 300px;
+  }
+  .mdh-slide h2 { font-size: 26px; margin: 0 0 20px; color: var(--text); }
+  .mdh-slide h3 { font-size: 18px; margin: 20px 0 10px; color: var(--accent); }
+  .mdh-slide p, .mdh-slide li { font-size: 16px; line-height: 1.65; color: var(--muted); }
+  .mdh-slide ul { padding-left: 22px; }
+  .mdh-slide code { background: #2a2d3a; padding: 2px 6px; border-radius: 3px; font-family: ui-monospace, monospace; font-size: 14px; }
+  .mdh-slide .slide-num { font-size: 12px; color: #555; margin-bottom: 16px; }
+  .mdh-slide .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; vertical-align: middle; }
+  .mdh-slide .badge.ok     { background: rgba(95,179,122,.2);  color: var(--ok); }
+  .mdh-slide .badge.warn   { background: rgba(240,168,64,.2);  color: var(--warn); }
+  .mdh-slide .badge.danger { background: rgba(229,115,115,.2); color: var(--danger); }
+
+  /* JS-enhanced: single-slide view */
+  .mdh-deck-active .mdh-slide { display: none; min-height: 100vh; margin: 0; border-radius: 0; border: 0; }
+  .mdh-deck-active .mdh-slide.active { display: flex; flex-direction: column; justify-content: center; }
+  .mdh-nav {
+    display: none; position: fixed; bottom: 24px; right: 24px; gap: 8px;
+  }
+  .mdh-deck-active .mdh-nav { display: flex; }
+  .mdh-nav button {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 18px; border-radius: 6px; font-size: 13px; cursor: pointer;
+  }
+  .mdh-nav button:hover { background: #252836; }
+  .mdh-counter { position: fixed; bottom: 28px; left: 24px; font-size: 12px; color: var(--muted); display: none; }
+  .mdh-deck-active .mdh-counter { display: block; }
+</style>
+</head>
+<body>
+
+<div class="mdh-deck" id="deck">
+
+  <div class="mdh-slide" data-slide-index="0">
+    <div class="slide-num">1 / 3</div>
+    <h2>DECK_TITLE</h2>
+    <p>Opening slide — replace with key thesis or agenda.</p>
+  </div>
+
+  <div class="mdh-slide" data-slide-index="1">
+    <div class="slide-num">2 / 3</div>
+    <h2>Section heading</h2>
+    <ul>
+      <li>Point one from the source.</li>
+      <li>Point two from the source.</li>
+      <li>Point three from the source.</li>
+    </ul>
+  </div>
+
+  <div class="mdh-slide" data-slide-index="2">
+    <div class="slide-num">3 / 3</div>
+    <h2>Summary</h2>
+    <p>Key takeaway from the source material.</p>
+  </div>
+
+</div>
+
+<div class="mdh-counter" id="counter"></div>
+<div class="mdh-nav">
+  <button id="btn-prev">&#8592; Prev</button>
+  <button id="btn-next">Next &#8594;</button>
+</div>
+
+<p style="font-size: 12px; color: #555; text-align: center; padding: 20px;">
+  Source: <code>SOURCE_PATH</code> (markdown remains authoritative; this HTML is a view).
+</p>
+
+<script>
+(function() {
+  'use strict';
+  var deck = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(deck.querySelectorAll('.mdh-slide'));
+  var counter = document.getElementById('counter');
+  var total = slides.length;
+  var current = 0;
+
+  function show(n) {
+    current = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, i) {
+      s.classList.toggle('active', i === current);
+    });
+    counter.textContent = (current + 1) + ' / ' + total;
+  }
+
+  deck.classList.add('mdh-deck-active');
+  show(0);
+
+  document.getElementById('btn-prev').addEventListener('click', function() { show(current - 1); });
+  document.getElementById('btn-next').addEventListener('click', function() { show(current + 1); });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { show(current + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { show(current - 1); }
+  });
+})();
+</script>
+
+</body>
+</html>

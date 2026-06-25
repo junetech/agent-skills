@@ -1,0 +1,210 @@
+<!--
+  prompt-tuner.html — Variable slot editor with live re-render + copy (editor mode)
+
+  WHEN TO USE: Source contains a prompt template with named variable slots
+  (e.g. {{tone}}, {{audience}}, {{topic}}). User fills slots and gets a
+  rendered prompt they can copy back to Claude.
+
+  INVARIANTS (must hold):
+  - Template and variable slots are in static DOM (invariant 8).
+    Without JS, the raw template and a table of variables are readable.
+  - No network calls.
+  - Export: "Copy Prompt" button (required for editor mode).
+  - User input goes to DOM via textContent / value, never innerHTML (invariant 10).
+
+  WHAT TO FILL:
+  - Replace TUNER_TITLE
+  - Set data-template on #prompt-template (use {{VAR_NAME}} slots)
+  - Add .mdh-var-row rows for each variable (data-var, input value)
+  - SOURCE_PATH for footer
+
+  CLASS PREFIX: mdh-tuner (no conflict with base.html classes)
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TUNER_TITLE</title>
+<style>
+  :root {
+    --bg: #fafaf7; --surface: #fff; --border: #e4e2da;
+    --text: #1a1a1a; --muted: #5e5e58; --faint: #8a8a82;
+    --accent: #2454b8; --accent-soft: #e6edfa; --code-bg: #1f2024;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
+
+  .mdh-tuner-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .mdh-tuner-header h1 { font-size: 20px; margin: 0; flex: 1; }
+  .mdh-copy-btn {
+    padding: 7px 16px; background: var(--accent); color: #fff;
+    border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  .mdh-copy-btn:hover { opacity: .88; }
+
+  .mdh-tuner-body { max-width: 900px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+  @media (max-width: 700px) { .mdh-tuner-body { grid-template-columns: 1fr; } }
+
+  .mdh-vars-panel { }
+  .mdh-vars-panel h2 { font-size: 14px; font-weight: 600; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+  /* No-JS fallback: plain table of variables */
+  .mdh-var-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .mdh-var-table th, .mdh-var-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .mdh-var-table th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; }
+
+  .mdh-var-row { margin-bottom: 12px; }
+  .mdh-var-label { font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  .mdh-var-input {
+    width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 5px;
+    font-size: 13px; font-family: system-ui, sans-serif; background: var(--surface);
+    color: var(--text);
+  }
+  .mdh-var-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+  .mdh-preview-panel h2 { font-size: 14px; font-weight: 600; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .mdh-prompt-preview {
+    background: var(--code-bg); color: #e6e6e0; border-radius: 8px;
+    padding: 16px 18px; font-family: ui-monospace, monospace; font-size: 13px;
+    line-height: 1.65; white-space: pre-wrap; word-break: break-word; min-height: 120px;
+  }
+  .mdh-slot-highlight { background: rgba(108,140,255,.25); border-radius: 3px; padding: 0 2px; color: #9bb8ff; }
+
+  /* Raw template (no-JS visible) */
+  .mdh-raw-template { display: none; }
+  .mdh-raw-template pre { background: var(--code-bg); color: #e6e6e0; padding: 14px 16px; border-radius: 6px; font-size: 12.5px; white-space: pre-wrap; }
+
+  footer { font-size: 11.5px; color: var(--faint); padding: 16px 24px; max-width: 900px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div class="mdh-tuner-header">
+  <h1>TUNER_TITLE</h1>
+  <button class="mdh-copy-btn" id="copy-btn">Copy Prompt</button>
+</div>
+
+<!-- No-JS: show raw template and variable table -->
+<noscript>
+<div style="max-width: 900px; margin: 24px auto; padding: 0 24px;">
+  <h2 style="font-size: 14px;">Template</h2>
+  <pre style="background:#1f2024;color:#e6e6e0;padding:14px 16px;border-radius:6px;white-space:pre-wrap;font-size:13px;">You are a {{TONE}} assistant helping {{AUDIENCE}} understand {{TOPIC}}.
+
+Explain {{TOPIC}} clearly and concisely. Focus on practical implications.
+Adjust your language for {{AUDIENCE}}.</pre>
+
+  <h2 style="font-size: 14px; margin-top: 20px;">Variables</h2>
+  <table class="mdh-var-table">
+    <thead><tr><th>Variable</th><th>Default / description</th></tr></thead>
+    <tbody>
+      <tr><td><code>TONE</code></td><td>friendly — tone of the assistant</td></tr>
+      <tr><td><code>AUDIENCE</code></td><td>developers — target audience</td></tr>
+      <tr><td><code>TOPIC</code></td><td>async/await — subject to explain</td></tr>
+    </tbody>
+  </table>
+</div>
+</noscript>
+
+<div class="mdh-tuner-body" id="tuner-body">
+
+  <div class="mdh-vars-panel">
+    <h2>Variables</h2>
+
+    <div class="mdh-var-row" data-var="TONE">
+      <div class="mdh-var-label">{{TONE}}</div>
+      <input class="mdh-var-input" type="text" value="friendly" placeholder="tone of the assistant">
+    </div>
+
+    <div class="mdh-var-row" data-var="AUDIENCE">
+      <div class="mdh-var-label">{{AUDIENCE}}</div>
+      <input class="mdh-var-input" type="text" value="developers" placeholder="target audience">
+    </div>
+
+    <div class="mdh-var-row" data-var="TOPIC">
+      <div class="mdh-var-label">{{TOPIC}}</div>
+      <input class="mdh-var-input" type="text" value="async/await" placeholder="subject to explain">
+    </div>
+
+  </div>
+
+  <div class="mdh-preview-panel">
+    <h2>Live Preview</h2>
+    <div class="mdh-prompt-preview" id="preview"></div>
+  </div>
+
+</div>
+
+<!-- Template source — content is in static DOM; JS reads this text -->
+<script id="prompt-template" type="text/x-template">You are a {{TONE}} assistant helping {{AUDIENCE}} understand {{TOPIC}}.
+
+Explain {{TOPIC}} clearly and concisely. Focus on practical implications.
+Adjust your language for {{AUDIENCE}}.</script>
+
+<footer>Source: <code>SOURCE_PATH</code> (markdown remains authoritative; this HTML is a view).</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  window.MDH = window.MDH || {};
+  MDH.copy = function(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).catch(function() { MDH._legacyCopy(text); });
+    } else { MDH._legacyCopy(text); }
+  };
+  MDH._legacyCopy = function(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } finally { ta.remove(); }
+  };
+
+  var templateEl = document.getElementById('prompt-template');
+  var template = templateEl ? templateEl.textContent : '';
+  var preview = document.getElementById('preview');
+  var body = document.getElementById('tuner-body');
+
+  function getVars() {
+    var vars = {};
+    body.querySelectorAll('.mdh-var-row').forEach(function(row) {
+      var key = row.dataset.var;
+      var input = row.querySelector('input');
+      if (key && input) vars[key] = input.value;
+    });
+    return vars;
+  }
+
+  function render() {
+    var vars = getVars();
+    var rendered = template;
+    Object.keys(vars).forEach(function(key) {
+      // Replace {{KEY}} with the user's value — use textContent for output, not innerHTML
+      rendered = rendered.split('{{' + key + '}}').join(vars[key]);
+    });
+    // Set via textContent to prevent XSS on user-supplied variable values
+    preview.textContent = rendered;
+  }
+
+  body.addEventListener('input', render);
+  render();
+
+  document.getElementById('copy-btn').addEventListener('click', function() {
+    var vars = getVars();
+    var rendered = template;
+    Object.keys(vars).forEach(function(key) {
+      rendered = rendered.split('{{' + key + '}}').join(vars[key]);
+    });
+    MDH.copy(rendered);
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy Prompt'; }, 1800);
+  });
+})();
+</script>
+
+</body>
+</html>

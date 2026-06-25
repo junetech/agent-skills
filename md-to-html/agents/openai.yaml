@@ -1,0 +1,3 @@
+interface:
+  display_name: "md to HTML"
+  short_description: "Convert markdown to self-contained HTML (document, editor, deck, sandbox)"

@@ -1,0 +1,223 @@
+<!--
+  slider-sandbox.html — Parameter slider with live preview + copy-params (sandbox mode)
+
+  WHEN TO USE: Source specifies numeric parameters (animation timings, CSS values,
+  thresholds, config knobs) that the user should be able to tune visually.
+  The param -> preview -> copy loop: user adjusts sliders, sees live result, copies
+  the current values back to their prompt.
+
+  INVARIANTS (must hold):
+  - Parameter defaults and labels are in static DOM (invariant 8).
+    Without JS, sliders render as inputs showing the default values.
+  - No network calls.
+  - Export: "Copy Params" button (required for sandbox mode per --require-export).
+  - textContent for all output (invariant 10).
+
+  WHAT TO FILL:
+  - Replace SANDBOX_TITLE
+  - Fill .mdh-param rows: data-param, data-unit, min, max, value, step
+  - Update .mdh-preview to show a meaningful live visualization of the params
+  - SOURCE_PATH for footer
+
+  CLASS PREFIX: mdh-slider, mdh-param, mdh-sandbox (no conflict with base.html classes)
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SANDBOX_TITLE</title>
+<style>
+  :root {
+    --bg: #fafaf7; --surface: #fff; --border: #e4e2da;
+    --text: #1a1a1a; --muted: #5e5e58; --faint: #8a8a82;
+    --accent: #2454b8; --accent-soft: #e6edfa;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
+
+  .mdh-sandbox-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .mdh-sandbox-header h1 { font-size: 20px; margin: 0; flex: 1; }
+  .mdh-copy-btn {
+    padding: 7px 16px; background: var(--accent); color: #fff;
+    border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  .mdh-copy-btn:hover { opacity: .88; }
+
+  .mdh-sandbox-body { max-width: 900px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 300px 1fr; gap: 28px; }
+  @media (max-width: 680px) { .mdh-sandbox-body { grid-template-columns: 1fr; } }
+
+  .mdh-params-panel h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 0 0 16px; }
+
+  .mdh-param { margin-bottom: 18px; }
+  .mdh-param-label { font-size: 13px; font-weight: 500; display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .mdh-param-name { color: var(--text); }
+  .mdh-param-value { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--accent); background: var(--accent-soft); padding: 1px 7px; border-radius: 4px; }
+  .mdh-slider-input {
+    width: 100%; -webkit-appearance: none; height: 5px; border-radius: 3px;
+    background: linear-gradient(to right, var(--accent) var(--pct, 50%), var(--border) var(--pct, 50%));
+    outline: none; cursor: pointer;
+  }
+  .mdh-slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  }
+  .mdh-param-range { display: flex; justify-content: space-between; font-size: 11px; color: var(--faint); margin-top: 3px; }
+
+  .mdh-preview-panel h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 0 0 16px; }
+  .mdh-preview {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 32px; display: flex; align-items: center; justify-content: center; min-height: 200px;
+  }
+  /* Demo preview element: a box that animates per the sliders */
+  .mdh-demo-box {
+    width: 80px; height: 80px; background: var(--accent); border-radius: 8px;
+  }
+
+  .mdh-params-output {
+    margin-top: 16px; background: #1f2024; color: #e6e6e0; border-radius: 6px;
+    padding: 12px 14px; font-family: ui-monospace, monospace; font-size: 12.5px;
+    white-space: pre;
+  }
+
+  footer { font-size: 11.5px; color: var(--faint); padding: 16px 24px; max-width: 900px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div class="mdh-sandbox-header">
+  <h1>SANDBOX_TITLE</h1>
+  <button class="mdh-copy-btn" id="copy-btn">Copy Params</button>
+</div>
+
+<div class="mdh-sandbox-body" id="sandbox-body">
+
+  <div class="mdh-params-panel">
+    <h2>Parameters</h2>
+
+    <div class="mdh-param" data-param="duration" data-unit="ms">
+      <div class="mdh-param-label">
+        <span class="mdh-param-name">Duration</span>
+        <span class="mdh-param-value" id="val-duration">400ms</span>
+      </div>
+      <input class="mdh-slider-input" id="sl-duration" type="range" min="100" max="2000" value="400" step="50">
+      <div class="mdh-param-range"><span>100ms</span><span>2000ms</span></div>
+    </div>
+
+    <div class="mdh-param" data-param="scale" data-unit="x">
+      <div class="mdh-param-label">
+        <span class="mdh-param-name">Scale</span>
+        <span class="mdh-param-value" id="val-scale">1.0x</span>
+      </div>
+      <input class="mdh-slider-input" id="sl-scale" type="range" min="0.5" max="3.0" value="1.0" step="0.1">
+      <div class="mdh-param-range"><span>0.5x</span><span>3.0x</span></div>
+    </div>
+
+    <div class="mdh-param" data-param="opacity" data-unit="%">
+      <div class="mdh-param-label">
+        <span class="mdh-param-name">Opacity</span>
+        <span class="mdh-param-value" id="val-opacity">100%</span>
+      </div>
+      <input class="mdh-slider-input" id="sl-opacity" type="range" min="0" max="100" value="100" step="5">
+      <div class="mdh-param-range"><span>0%</span><span>100%</span></div>
+    </div>
+
+    <div class="mdh-param" data-param="border-radius" data-unit="px">
+      <div class="mdh-param-label">
+        <span class="mdh-param-name">Border radius</span>
+        <span class="mdh-param-value" id="val-border-radius">8px</span>
+      </div>
+      <input class="mdh-slider-input" id="sl-border-radius" type="range" min="0" max="50" value="8" step="1">
+      <div class="mdh-param-range"><span>0px</span><span>50px</span></div>
+    </div>
+
+  </div>
+
+  <div class="mdh-preview-panel">
+    <h2>Live Preview</h2>
+    <div class="mdh-preview">
+      <div class="mdh-demo-box" id="demo-box"></div>
+    </div>
+    <div class="mdh-params-output" id="params-out"></div>
+  </div>
+
+</div>
+
+<footer>Source: <code>SOURCE_PATH</code> (markdown remains authoritative; this HTML is a view).</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  window.MDH = window.MDH || {};
+  MDH.copy = function(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).catch(function() { MDH._legacyCopy(text); });
+    } else { MDH._legacyCopy(text); }
+  };
+  MDH._legacyCopy = function(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } finally { ta.remove(); }
+  };
+
+  var sliders = {
+    duration:      { el: document.getElementById('sl-duration'),      val: document.getElementById('val-duration'),      unit: 'ms' },
+    scale:         { el: document.getElementById('sl-scale'),         val: document.getElementById('val-scale'),         unit: 'x' },
+    opacity:       { el: document.getElementById('sl-opacity'),       val: document.getElementById('val-opacity'),       unit: '%' },
+    'border-radius': { el: document.getElementById('sl-border-radius'), val: document.getElementById('val-border-radius'), unit: 'px' }
+  };
+
+  var box = document.getElementById('demo-box');
+  var paramsOut = document.getElementById('params-out');
+
+  function updateSliderBackground(input) {
+    var min = parseFloat(input.min), max = parseFloat(input.max), val = parseFloat(input.value);
+    var pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
+    input.style.setProperty('--pct', pct);
+  }
+
+  function render() {
+    var vals = {};
+    Object.keys(sliders).forEach(function(key) {
+      var s = sliders[key];
+      var v = parseFloat(s.el.value);
+      vals[key] = v;
+      // Use textContent to set display value safely
+      s.val.textContent = v + s.unit;
+      updateSliderBackground(s.el);
+    });
+
+    // Apply to preview box
+    box.style.transition = 'transform ' + vals['duration'] + 'ms ease, opacity ' + vals['duration'] + 'ms ease, border-radius ' + vals['duration'] + 'ms ease';
+    box.style.transform = 'scale(' + vals['scale'] + ')';
+    box.style.opacity = (vals['opacity'] / 100);
+    box.style.borderRadius = vals['border-radius'] + 'px';
+
+    // Update text output (textContent only)
+    var lines = Object.keys(vals).map(function(k) { return k + ': ' + vals[k] + sliders[k].unit; });
+    paramsOut.textContent = lines.join('\n');
+  }
+
+  Object.keys(sliders).forEach(function(key) {
+    sliders[key].el.addEventListener('input', render);
+  });
+
+  render();
+
+  document.getElementById('copy-btn').addEventListener('click', function() {
+    MDH.copy(paramsOut.textContent);
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy Params'; }, 1800);
+  });
+})();
+</script>
+
+</body>
+</html>
