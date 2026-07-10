@@ -149,23 +149,29 @@ JS 허용 범위 (invariant 9):
 5. **Pick the skeleton by mode.** document → `assets/base.html` + inline fragment snippets (tabs/diff/chart). editor/deck/sandbox → copy the matching full-document component (`triage-board`/`toggle-editor`/`prompt-tuner`/`slide-deck`/`slider-sandbox`) and adapt it.
 6. **Fill the body** per source. Escape markdown-origin text, replace placeholders, delete unused example snippets, add components per transform table.
 7. **Verify before reporting done** (see Verification checklist below).
+8. **External link 추천.** source에 이미 있는 링크는 `<a href>`로 그대로 옮긴다 (하이퍼링크는 asset이 아니다 — 오프라인 동작에 영향 없음). 그 외에 "여기 외부 참조가 있으면 좋겠다" 싶은 지점(인용된 스펙, 논문, 도구 문서)은 **HTML에 임의로 넣지 말고**, 생성이 끝난 뒤 사용자에게 "이 섹션에 X 링크를 걸까요?"로 제안한다.
 
 ---
 
 ## Verification Checklist
 
 **All modes:**
-```
-python md-to-html/scripts/validate_output.py \
+```sh
+# Linux / macOS
+python3 <skill-dir>/scripts/validate_output.py \
   --mode {document|editor|deck|sandbox} \
   --source <source.md> --html <output.html>
+# Windows
+python <skill-dir>/scripts/validate_output.py ...
 ```
+`<skill-dir>`는 이 skill 자신의 디렉터리 — harness가 skill을 로드할 때 알려준다. `md-to-html/scripts/...` 같은 repo-relative 경로는 이 저장소 안에서만 풀린다; skill은 자신이 동작하는 저장소 바깥에 설치된다.
+
 Add flags as applicable: `--peer <peer.html>`, `--require-modmap`, `--forbid-svg`, `--require-export`.
 
 **Document mode 추가 점검:**
 - Every .md section has an HTML counterpart (use .md TOC as checklist).
 - Every code block survived (count them).
-- File opens standalone — no `<link>`, no `<script src=...>`, no remote asset URLs.
+- File opens standalone — no `<link>`, no `<script src=...>`, no remote asset URLs on `img`/`iframe`/`source`. A remote `<a href>` hyperlink is fine.
 - No `{{...}}` placeholder remains.
 - Sidebar anchor links match `id` attributes in body.
 - Footer attribution line present.

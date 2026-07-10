@@ -59,8 +59,9 @@
   .mdh-slider-input {
     width: 100%; -webkit-appearance: none; height: 5px; border-radius: 3px;
     background: linear-gradient(to right, var(--accent) var(--pct, 50%), var(--border) var(--pct, 50%));
-    outline: none; cursor: pointer;
+    cursor: pointer;
   }
+  .mdh-slider-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .mdh-slider-input::-webkit-slider-thumb {
     -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
     background: var(--accent); cursor: pointer; border: 2px solid #fff;

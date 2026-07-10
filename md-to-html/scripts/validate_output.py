@@ -45,19 +45,25 @@ NETWORK_PATTERNS: list[tuple[str, str]] = [
     (r"\bimport\s*\(\s*[\"']https?://", "URL import(http...)"),
 ]
 
-# External asset patterns — banned in ALL modes
+# External asset patterns — banned in ALL modes.
+#
+# Only elements that *load* a remote resource are banned; a remote `href` on an
+# <a> is a hyperlink the reader may click, not a fetch at page load, so it does
+# not break double-click-and-open-offline (invariant 2). Matching a bare `href=`
+# would fail every converted plan or RFC that cites a URL in prose.
+ASSET_ELEMENTS = ("link", "script", "img", "iframe", "embed", "source", "video", "audio", "object")
+
 EXTERNAL_ASSET_PATTERNS: list[tuple[str, str]] = [
     (r"<\s*link\b", "<link>"),
-    (r"\b(?:src|href)\s*=\s*[\"']https?://", "remote src/href"),
+    (
+        rf"<\s*(?:{'|'.join(ASSET_ELEMENTS)})\b[^>]*\b(?:src|href|data)\s*=\s*[\"']https?://",
+        "remote asset src/href",
+    ),
     (r"url\(\s*[\"']?https?://", "remote CSS url(...)"),
     (r"@import\s+url\s*\(\s*[\"']?https?://", "@import url(http...)"),
 ]
 
 # Export affordance patterns for --require-export
-EXPORT_BTN_RE = re.compile(
-    r"copy|export|download",
-    re.IGNORECASE,
-)
 MDH_EXPORT_RE = re.compile(
     r"MDH\.(copy|download)",
     re.IGNORECASE,
@@ -178,7 +184,6 @@ def check_universal(
 def check_document_mode(
     html_text: str,
     markdown: str,
-    source: Path,
     args: argparse.Namespace,
 ) -> tuple[list[str], list[str]]:
     """Document-mode-specific checks. Returns (errors, warnings)."""
@@ -300,7 +305,7 @@ def check(args: argparse.Namespace) -> tuple[list[str], list[str]]:
     # Mode-specific checks
     mode = args.mode
     if mode == "document":
-        errs, warns = check_document_mode(html_text, markdown, source, args)
+        errs, warns = check_document_mode(html_text, markdown, args)
         all_errors.extend(errs)
         all_warnings.extend(warns)
     else:

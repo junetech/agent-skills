@@ -23,11 +23,12 @@
   }
   .mdh-tab-list a:hover { color: var(--text); }
   .mdh-tab-panel { display: none; padding: 16px 0; }
+  /* Fallback: first panel visible when no :target matches */
+  .mdh-tab-panel:first-of-type { display: block; }
+  /* Once any panel is targeted, the first panel yields unless it is the target */
+  .mdh-tabs:has(.mdh-tab-panel:target) .mdh-tab-panel:first-of-type:not(:target) { display: none; }
   /* :target trick: panel shown when its id is the URL fragment */
   .mdh-tab-panel:target { display: block; }
-  /* Fallback: first panel always visible when no :target matches */
-  .mdh-tab-panel:first-of-type { display: block; }
-  .mdh-tab-panel:target ~ .mdh-tab-panel:first-of-type { display: none; }
 </style>
 
 <div class="mdh-tabs">

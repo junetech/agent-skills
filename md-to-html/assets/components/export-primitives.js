@@ -42,11 +42,16 @@ MDH._legacyCopy = function(text) {
 MDH.download = function(name, text, type) {
   type = type || 'text/markdown';
   var blob = new Blob([text], { type: type });
+  var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = name;
+  // Firefox dispatches the download only for an anchor in the document, and
+  // aborts it if the object URL is revoked before the fetch starts.
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  a.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 0);
 };
 
 // HTML-escape helper — use for inserting text into innerHTML contexts
