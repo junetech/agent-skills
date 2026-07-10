@@ -59,7 +59,8 @@ Run `git diff --staged`, then draft a Conventional Commits message:
     ```
 
     `<skill-dir>` is this skill's own directory, which the harness reports when it loads the skill. A repo-relative path such as `git-workflow/scripts/...` resolves only inside this repo; the skill is installed outside the repo it runs in. Use the interpreter named for the current platform: on Linux `python` is often absent or aliased to Python 2, while on Windows `python` is the name the installer puts on PATH.
-  - The checker prints one `Title: NN columns ✓` line per candidate — or `✗` plus one line per broken rule — and exits 0 when all pass, 1 otherwise
+  - The checker prints one `Title: NN columns ✓` line per candidate — or `✗` plus one line per broken rule. Only a `✓` title may be used; several candidates can carry it. Exit 0 means at least one did, exit 1 that none did, so a mixed run is a success and not a checker failure
+  - Never draft a title the checker has not marked `✓`. If it did not run, say so rather than counting the columns yourself
 - Use imperative mood ("fix", not "fixed")
 - No trailing period
 - Paste the checker's `Title: NN columns ✓` line verbatim after the draft; the user reads this line to confirm the limit was respected

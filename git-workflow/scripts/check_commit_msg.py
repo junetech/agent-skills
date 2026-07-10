@@ -26,10 +26,19 @@ Two width approximations, both accepted because `git log --oneline` prefixes an
 Usage:
   python <skill-dir>/scripts/check_commit_msg.py 'TITLE' ['TITLE' ...]
 
-Exit codes:
-  0 — every title passes
-  1 — one or more violations
+The `✓` mark decides which titles are usable, and any number of them may
+carry it. The exit code only gates whether a usable one exists at all:
+  0 — at least one title is marked `✓`
+  1 — every title is marked `✗`
   2 — usage error
+
+A mixed run is therefore a success. Exiting 1 there would read as "the
+checker did not finish", and a caller that cannot tell that apart from a
+real failure has to trust a title it never saw verified.
+
+The corollary: with several titles, exit 0 does not mean they all passed.
+Read the marks, never the exit code, to pick a title. A commit-msg hook --
+which must reject the one title it is handed -- has to pass exactly one.
 """
 
 from __future__ import annotations
@@ -105,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="check_commit_msg.py",
         description="Check commit titles against the git-workflow conventions.",
-        epilog="exit: 0 = every title passes, 1 = violation, 2 = usage error",
+        epilog="exit: 0 = some title passes, 1 = none do, 2 = usage error",
     )
     # One positional, one mode. There is no second input to silently drop, and
     # no pair of modes to guess between.
@@ -117,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     titles = parser.parse_args(argv).titles
 
-    failed = False
+    passed = False
     for title in titles:
         width = display_width(title)
         reasons = violations(title, width)
@@ -126,9 +135,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Title: {width} columns {'✗' if reasons else '✓'}  {title}")
         for reason in reasons:
             print(f"  - {reason}")
-        failed = failed or bool(reasons)
+        passed = passed or not reasons
 
-    return 1 if failed else 0
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":
