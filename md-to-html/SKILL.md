@@ -174,7 +174,7 @@ Add flags as applicable: `--peer <peer.html>`, `--require-modmap`, `--forbid-svg
 - Every .md section has an HTML counterpart (use .md TOC as checklist).
 - Every code block survived (count them).
 - File opens standalone — no `<link>`, no `<script src=...>`, no remote asset URLs on `img`/`iframe`/`source`. A remote `<a href>` hyperlink is fine.
-- No `{{...}}` placeholder remains.
+- No template placeholder remains (`DOCUMENT_TITLE`, `TAB_1_ID`, …). A `{{KEY}}` marker is *not* a placeholder: in prompt-tuner it is a runtime variable and must survive into the output.
 - Sidebar anchor links match `id` attributes in body.
 - Footer attribution line present.
 - SVG audit (invariant 7): file-layout/module/architecture section → `<figure class="modmap">` containing `<svg>`.

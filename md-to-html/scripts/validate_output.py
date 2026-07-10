@@ -34,6 +34,44 @@ from pathlib import Path
 HEADING_RE = re.compile(r"^(#{2,6})\s+(.+?)\s*#*\s*$", re.MULTILINE)
 FENCE_RE = re.compile(r"^\s*```", re.MULTILINE)
 
+# Placeholder tokens the templates in ../assets/ ship with, all of which must be
+# replaced before the output is shipped. Kept in step with the "WHAT TO FILL"
+# comment blocks in those templates, which are the single source.
+#
+# The tokens are bare, not `{{WRAPPED}}`. An earlier check looked for
+# `{{...}}` instead, which matched no template and so never fired, while
+# rejecting every correct prompt-tuner build: `{{TONE}}` and its siblings are
+# that tool's runtime variables, substituted by JS at click time, and are
+# supposed to survive into the output. Do not reinstate a `{{...}}` rule.
+#
+# Enumerated rather than matched as a generic SCREAMING_SNAKE pattern, which
+# would flag any converted plan that quotes a constant in a code block.
+PLACEHOLDER_TOKENS = (
+    "DOCUMENT_TITLE",
+    "SOURCE_FILENAME",
+    "SOURCE_PATH",
+    "SOURCE_REFERENCE",
+    "BOARD_TITLE",
+    "CHART_TITLE",
+    "CHART_CAPTION",
+    "SPARKLINE_CAPTION",
+    "DECK_TITLE",
+    "FLAG_EDITOR_TITLE",
+    "SANDBOX_TITLE",
+    "TUNER_TITLE",
+    "METRIC_NAME",
+    "VAR_NAME",
+)
+
+PLACEHOLDER_RE = re.compile(
+    r"\b(?:"
+    + "|".join(PLACEHOLDER_TOKENS)
+    + r"|TAB_(?:\d+|N)_(?:ID|LABEL|CONTENT)"
+    + r"|FLAG_NAME_(?:\d+|N)"
+    + r"|VALUE_[A-D]"
+    + r")\b"
+)
+
 # Network call patterns — banned in ALL modes (invariant 9)
 NETWORK_PATTERNS: list[tuple[str, str]] = [
     (r"\bfetch\s*\(", "fetch("),
@@ -138,8 +176,11 @@ def check_universal(
     warnings: list[str] = []
 
     # 1. No unreplaced placeholders
-    if re.search(r"\{\{\s*[A-Z_]+\s*\}\}", html_text):
-        errors.append("unreplaced {{...}} placeholder remains")
+    leftover = sorted(set(PLACEHOLDER_RE.findall(html_text)))
+    if leftover:
+        errors.append(
+            "unreplaced template placeholder remains: " + ", ".join(leftover)
+        )
 
     # 2. External asset ban (link, remote src/href, remote CSS url)
     for pattern, label in EXTERNAL_ASSET_PATTERNS:
