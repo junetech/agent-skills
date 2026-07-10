@@ -143,6 +143,14 @@ def count_markdown_code_blocks(markdown: str) -> int:
 
 
 def find_h2_plus_headings(markdown: str) -> list[tuple[str, str]]:
+    # Blank out fenced code spans first: a `### foo` shown inside a ``` block is
+    # sample text, not a document section, and must not demand an anchor.
+    markdown = re.sub(
+        r"^\s*```.*?^\s*```",
+        "",
+        markdown,
+        flags=re.MULTILINE | re.DOTALL,
+    )
     headings: list[tuple[str, str]] = []
     for match in HEADING_RE.finditer(markdown):
         text = match.group(2).strip()

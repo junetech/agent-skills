@@ -23,7 +23,7 @@
     display: flex; justify-content: space-between; align-items: center;
   }
   .mdh-diff-body { overflow-x: auto; }
-  .mdh-diff-body pre { margin: 0; border-radius: 0; font-size: 12px; line-height: 1.5; padding: 0; background: #1f2024; }
+  .mdh-diff-code { font-size: 12px; line-height: 1.5; background: #1f2024; }
   .mdh-diff-line { display: flex; }
   .mdh-diff-line .ln {
     width: 40px; min-width: 40px; text-align: right; padding: 0 8px;
@@ -54,12 +54,12 @@
     <span class="badge info">reviewed</span>
   </div>
   <div class="mdh-diff-body">
-    <pre>
-<div class="mdh-diff-line ctx"><span class="ln">1</span><span class="code">context line here</span></div>
-<div class="mdh-diff-line del"><span class="ln">2</span><span class="code">removed line here</span></div>
-<div class="mdh-diff-line add"><span class="ln">3</span><span class="code">added line here</span></div>
-<div class="mdh-diff-line ctx"><span class="ln">4</span><span class="code">context line here</span></div>
-    </pre>
+    <div class="mdh-diff-code">
+      <div class="mdh-diff-line ctx"><span class="ln">1</span><span class="code">context line here</span></div>
+      <div class="mdh-diff-line del"><span class="ln">2</span><span class="code">removed line here</span></div>
+      <div class="mdh-diff-line add"><span class="ln">3</span><span class="code">added line here</span></div>
+      <div class="mdh-diff-line ctx"><span class="ln">4</span><span class="code">context line here</span></div>
+    </div>
   </div>
   <div class="mdh-diff-notes">
     <div class="mdh-diff-note" data-severity="high">
