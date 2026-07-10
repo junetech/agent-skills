@@ -1,7 +1,7 @@
 ---
 name: git-workflow
 description: Git staged changes review and commit message drafting. Use when asked to review staged changes, summarize a diff, write a commit message, or prepare to commit. Uses Conventional Commits format with a title width check (≤49 display columns, so each CJK character counts as two).
-compatibility: Requires python 3.7+ on PATH; one Python implementation, no shell mirror. Verified on Python 3.14 under Claude Code with Git Bash and under opencode with PowerShell, both on Windows with a cp949 locale. Untested on macOS/Linux.
+compatibility: Requires python 3.7+ on PATH; one Python implementation, no shell mirror. Verified on Python 3.14 under Claude Code with Git Bash and under opencode with PowerShell, both on Windows with a cp949 locale; and on Python 3.12 under Linux with a C locale. Untested on macOS.
 ---
 
 ## Review Staged Changes
