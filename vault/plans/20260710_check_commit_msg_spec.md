@@ -1,8 +1,7 @@
 # check_commit_msg.py — 사양서 및 구현 계획
 
-> 이 문서는 [`20260710_git_workflow_commit_msg_checker.md`](20260710_git_workflow_commit_msg_checker.md)(shell 미러)와
-> [`20260710_commit_checker_python_rewrite.md`](20260710_commit_checker_python_rewrite.md)(Python 이식)를 **모두 대체한다**.
-> 앞의 두 문서는 역사적 기록으로 보존한다. 이 문서가 유일한 사양이다.
+> 이 문서는 `check_commit_msg.py`의 사양서다. 원래 두 계획서(shell 미러, Python 이식)를 대체했으나,
+> 둘 다 삭제되었다. 현재는 구현이 완료된 상태로, 이 문서가 설계 결정의 유일한 기록이다.
 
 ## Goal
 
