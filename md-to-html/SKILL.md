@@ -4,71 +4,73 @@ description: >-
   Convert markdown (plans, specs, design docs, reviews) — or a direct request —
   into a self-contained, single-file HTML artifact next to the source. Four modes:
   (1) document: static spatial doc with sidebar TOC, inline SVG module maps,
-  risk/decision/comparison cards (the former md-to-spatial-html behavior);
+  risk/decision/comparison cards;
   (2) editor: purpose-built interactive tools (triage board, feature-flag editor,
-  prompt tuner) with copy/export-back-to-Claude; (3) deck: keyboard-navigable
-  slides & concept explainers; (4) sandbox: slider/param prototypes with live
-  preview and copy-params. Static (no-JS) is the default; vanilla JS unlocks only
-  for interactive modes — always single file, no CDN, no network. Use for "make
-  this HTML", "convert to HTML", "이거 HTML로", "plan을 HTML로", "triage board",
-  "slide deck", "prompt tuner", "animation sandbox". Not for single-paragraph
-  notes or passing mentions of HTML. Keywords: spatial html, interactive html,
-  triage board, slide deck, prompt tuner, export to clipboard, self-contained.
+  prompt tuner) with copy/export-back-to-Claude;
+  (3) deck: keyboard-navigable slides & concept explainers;
+  (4) sandbox: slider/param prototypes with live preview and copy-params.
+  Static (no-JS) is the default; vanilla JS unlocks only for interactive modes —
+  always single file, no CDN, no network.
+  Use for "make this HTML", "convert to HTML", "render this plan as HTML",
+  "triage board", "slide deck", "prompt tuner", "animation sandbox", or similar.
+  Not for single-paragraph notes or passing mentions of HTML.
+  Keywords: spatial html, interactive html, triage board, slide deck, prompt tuner,
+  export to clipboard, self-contained.
 ---
 
 # md → HTML
 
-단일 skill이 입력/요청의 성격을 보고 4개 모드 중 하나를 골라, **단일 파일 self-contained HTML** 산출물을 원본 옆에 만든다.
+Inspect the input/request, pick one of four modes, and produce a **single-file self-contained HTML** artifact next to the source.
 
 Thesis (Thariq Shihipar, [html-effectiveness](https://thariqs.github.io/html-effectiveness/)):
 
 > Diffs and call-graphs are spatial information; markdown flattens them. HTML's real power: (1) information density/spatiality, (2) interactivity, (3) a two-way loop where the user edits and exports back to Claude.
 
-**산출물만 단일 파일.** skill 자산(`assets/`, `scripts/`)은 다파일 구조여도 된다. 조립 방식은 모드에 따라 다르다 — document 모드는 `base.html` shell에 정적 fragment를 인라인하고, interactive 모드(editor/deck/sandbox)는 해당 full-document 컴포넌트를 skeleton으로 복사해 적응시킨다 (자세히는 아래 Self-contained / JS Rules).
+**Only the output is a single file.** Skill assets (`assets/`, `scripts/`) may be multi-file. Assembly differs by mode — document mode inlines static fragments into the `base.html` shell, while interactive modes (editor/deck/sandbox) copy the matching full-document component as a skeleton and adapt it (details under Self-contained / JS Rules below).
 
 ---
 
 ## Mode Router
 
-라우팅 기본값은 **document**. interactive 모드는 "사용자가 *도구*를 원한다"가 분명할 때만.
+The routing default is **document**. Use an interactive mode only when it is clear that the user wants a *tool*.
 
-| 신호 (source/요청) | 모드 | JS |
+| Signal (source/request) | Mode | JS |
 | --- | --- | --- |
-| plan / spec / design doc / RFC / postmortem / review / "이거 HTML로", "render this", "spatial HTML version", "plan을 HTML로" | **document** (기본) | 없음 (정적) |
-| "triage board / kanban / 우선순위 보드", "toggle/flag editor", "prompt tuner", 편집·재배열·export가 목적 | **editor** | opt-in |
-| "slide deck / 발표자료 / deck", "concept explainer", 순차 제시·교육 | **deck** | opt-in (네비/토글 한정) |
-| "animation sandbox / 파라미터 튜닝", "design system / swatches", "component variants", 값 조절→미리보기 | **sandbox** | opt-in |
+| plan / spec / design doc / RFC / postmortem / review / "make this HTML", "render this", "spatial HTML version", "turn the plan into HTML" | **document** (default) | none (static) |
+| "triage board / kanban / priority board", "toggle/flag editor", "prompt tuner", anything whose purpose is editing, reordering, or exporting | **editor** | opt-in |
+| "slide deck / presentation / deck", "concept explainer", sequential presentation or teaching | **deck** | opt-in (navigation/toggle only) |
+| "animation sandbox / parameter tuning", "design system / swatches", "component variants", adjust-value-then-preview | **sandbox** | opt-in |
 
-라우팅 규칙:
-- 애매하면 **document**.
-- 한 요청이 두 모드를 요구하면 **각각 별도 파일**로 만들고 peer link로 연결한다. 한 파일에 섞지 않는다.
-  - 예: "이 스프린트 계획을 HTML로 만들고 백로그는 트리아지 보드로" → `sprint_plan.html`(document) + `backlog_board.html`(editor), 양쪽 sidebar에서 서로 링크.
-  - 같은 모드의 형제 문서(예: `test2_plan.md` + `test2_detail.md`)는 둘 다 document 모드로 만들고 peer link로 연결한다.
+Routing rules:
+- When ambiguous, choose **document**.
+- If one request calls for two modes, produce **separate files** and connect them with peer links. Never mix modes in one file.
+  - Example: "turn this sprint plan into HTML and make the backlog a triage board" → `sprint_plan.html` (document) + `backlog_board.html` (editor), cross-linked from both sidebars.
+  - Sibling documents in the same mode (e.g. `test2_plan.md` + `test2_detail.md`) both become document mode and are connected with peer links.
 
 ---
 
 ## Non-negotiable Invariants
 
-1. **`.md`를 보존한다.** Source of truth. 같은 basename `.html`을 같은 디렉터리에 쓴다. 절대 덮어쓰지/지우지 않는다.
-2. **단일 self-contained 파일.** CSS는 `<style>` 인라인, SVG 인라인, JS는 `<script>` 인라인. CDN/외부폰트/네트워크 금지. 더블클릭으로 오프라인 동작.
-3. **document 모드는 content loss 0.** 모든 문단/코드/표/리스트가 escaped HTML로 살아남는다.
-4. **peer link** — 관련 파일 묶음 변환 시 sidebar에서 형제 문서를 링크.
-5. **footer attribution** — 매 파일 끝 `Source: <path>.md (markdown remains authoritative; this HTML is a view).`
-6. **markdown-origin text는 HTML escape** (`&`/`<`/`>`/속성 따옴표; 코드는 `<code>` 안에서 escape).
-7. **file/module/architecture 섹션 → inline SVG module map** (`<figure class="modmap">`) + 원문 보존. 스타일 리스트나 파일명 `<table>`로 대체 금지. SVG 박스 안 레이블은 짧게; 긴 전체 경로와 원문 불릿은 figure 아래 escaped prose 또는 table로 보존.
-8. **Progressive enhancement.** JS는 점진적 향상이어야 한다 — JS가 꺼져도 핵심 콘텐츠가 보여야 한다. deck은 슬라이드가 세로로 쌓여 보이고, editor/board는 데이터가 정적 리스트로 보인다. **JS 없으면 빈 화면 = 실패.** 콘텐츠는 실제 DOM에 있어야 하고, JS가 `innerHTML`로 처음부터 생성하면 안 된다.
-9. **No network / no exfiltration.** `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `navigator.sendBeacon`, URL `import()`, 원격 `src/href`, `@import url(http…)` **전부 금지.** export는 clipboard 쓰기 또는 로컬 파일 download만.
-10. **No XSS via echoed text.** 사용자/markdown 텍스트를 DOM에 넣을 때 `textContent`/escape 사용. 사용자 데이터에 `innerHTML` 사용 금지.
+1. **Preserve the `.md`.** It is the source of truth. Write the `.html` with the same basename into the same directory. Never overwrite or delete the source.
+2. **Single self-contained file.** CSS inline in `<style>`, SVG inline, JS inline in `<script>`. No CDN, no external fonts, no network. It must work offline on double-click.
+3. **Document mode has zero content loss.** Every paragraph, code block, table, and list survives as escaped HTML.
+4. **Peer links** — when converting a related set of files, link sibling documents from the sidebar.
+5. **Footer attribution** — end every file with `Source: <path>.md (markdown remains authoritative; this HTML is a view).`
+6. **Escape markdown-origin text** (`&`/`<`/`>`/attribute quotes; code is escaped inside `<code>`).
+7. **File/module/architecture sections → inline SVG module map** (`<figure class="modmap">`) with the original text preserved. Never substitute a styled list or a `<table>` of filenames. Keep labels inside SVG boxes short; preserve long full paths and the original bullets below the figure as escaped prose or a table.
+8. **Progressive enhancement.** JS must be a progressive enhancement — core content must be visible with JS disabled. A deck's slides stack vertically; an editor/board shows its data as a static list. **Blank screen without JS = failure.** Content must live in the real DOM, never generated from scratch by JS via `innerHTML`.
+9. **No network / no exfiltration.** `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `navigator.sendBeacon`, URL `import()`, remote `src`/`href`, `@import url(http…)` are **all forbidden.** Export means clipboard writes or local file downloads only.
+10. **No XSS via echoed text.** Use `textContent`/escaping when putting user or markdown text into the DOM. Never use `innerHTML` with user data.
 
 ---
 
 ## Per-mode Playbook
 
-### Document Mode (기본, 정적)
+### Document Mode (default, static)
 
-기존 `md-to-spatial-html` 변환을 그대로 계승 + 레벨업. JS 없음. `assets/base.html`에서 시작.
+Inherits the original `md-to-spatial-html` conversion and levels it up. No JS. Start from `assets/base.html`.
 
-**The transform table** — markdown shape을 보면 HTML로 이렇게 렌더한다:
+**The transform table** — given a markdown shape, render it in HTML like this:
 
 | Markdown shape | HTML rendering |
 | --- | --- |
@@ -85,58 +87,58 @@ Thesis (Thariq Shihipar, [html-effectiveness](https://thariqs.github.io/html-eff
 | "TL;DR" / "At a glance" intro paragraph | **Highlighted TL;DR box** at the top, info-colored, with bulleted summary |
 | "Out of scope / Deferred" items | Decision-strip variant with **muted gray** styling + `deferred` badge |
 
-레벨업 컴포넌트 (정적, JS 불필요):
-- **Tabbed code/content**: `:target` 또는 `<details>` 기반 — `assets/components/tabs.html` 참조
-- **Annotated diff**: `<pre>` + margin gutter + severity 색상 — `assets/components/diff-view.html` 참조
-- **Inline-SVG chart**: 소스에 데이터가 있을 때만 — `assets/components/chart-svg.html` 참조
-- **Timeline**: 사건 분 단위 세로 타임라인
+Level-up components (static, no JS needed):
+- **Tabbed code/content**: `:target`- or `<details>`-based — see `assets/components/tabs.html`
+- **Annotated diff**: `<pre>` + margin gutter + severity colors — see `assets/components/diff-view.html`
+- **Inline-SVG chart**: only when the source contains the data — see `assets/components/chart-svg.html`
+- **Timeline**: vertical minute-by-minute timeline of events
 
 ### Editor Mode (opt-in JS)
 
-정의적 특징: **사용자의 편집을 다시 Claude로 가져갈 수 있어야 한다.** export 없는 editor는 실패다.
+Defining trait: **the user's edits must be able to travel back to Claude.** An editor without export is a failure.
 
-- 참조 컴포넌트: `assets/components/triage-board.html`, `toggle-editor.html`, `prompt-tuner.html`
-- 필수 요소:
-  - **데이터는 정적 DOM**으로 먼저 렌더 (invariant 8). JS는 재배열/토글/재계산만.
-  - **export control 최소 1개**: "Copy as Markdown" / "Copy as JSON" / "Copy diff" / "Download .md" 중 하나 이상. export 텍스트는 *현재 UI 상태*를 반영.
-  - `MDH.copy`/`MDH.download` export 프리미티브 사용 — `assets/components/export-primitives.js` 참조
-  - 의존성/검증 경고: 토글이 다른 값을 깨면 인라인 경고.
-- content-loss 규칙 완화: 도구다. 단 **source 데이터 항목은 빠짐없이** 들어가야 한다.
+- Reference components: `assets/components/triage-board.html`, `toggle-editor.html`, `prompt-tuner.html`
+- Requirements:
+  - **Render data as static DOM** first (invariant 8). JS only reorders, toggles, and recomputes.
+  - **At least one export control**: "Copy as Markdown" / "Copy as JSON" / "Copy diff" / "Download .md". The exported text reflects the *current UI state*.
+  - Use the `MDH.copy`/`MDH.download` export primitives — see `assets/components/export-primitives.js`
+  - Dependency/validation warnings: if a toggle breaks another value, show an inline warning.
+- The content-loss rule is relaxed here — this is a tool. But **every source data item** must be present.
 
-### Deck / Explainer Mode (opt-in, 가벼운 JS)
+### Deck / Explainer Mode (opt-in, light JS)
 
-- slide deck: 키보드 화살표 네비, 슬라이드 카운터. **no-JS fallback = 슬라이드 세로 스택** (invariant 8)
-- concept explainer: 인터랙티브 시각화(인라인 SVG 조작) + glossary + TL;DR
-- `assets/components/slide-deck.html` 참조
-- JS 범위 제한: 네비게이션/토글/단순 상태만. 외부 의존성 0.
+- slide deck: keyboard arrow navigation, slide counter. **no-JS fallback = slides stacked vertically** (invariant 8)
+- concept explainer: interactive visualization (inline SVG manipulation) + glossary + TL;DR
+- see `assets/components/slide-deck.html`
+- JS scope limit: navigation, toggles, simple state only. Zero external dependencies.
 
 ### Sandbox / Prototype Mode (opt-in JS)
 
-정의적 특징: **param → preview → copy** 루프.
+Defining trait: the **param → preview → copy** loop.
 
-- animation sandbox: slider → 라이브 미리보기 → copy params (현재 값/CSS를 클립보드로)
-- design system/component variants: swatch/토큰/상태 contact sheet. 토큰 클릭 시 값 copy.
-- `assets/components/slider-sandbox.html` 참조
-- 사용자가 고른 값이 다시 프롬프트로 들어간다.
+- animation sandbox: slider → live preview → copy params (current values/CSS to the clipboard)
+- design system / component variants: swatch, token, and state contact sheet. Clicking a token copies its value.
+- see `assets/components/slider-sandbox.html`
+- The values the user picks must be able to go back into a prompt.
 
 ---
 
 ## Self-contained / JS Rules
 
-**Component 종류 두 가지** (`assets/components/`):
-- **Fragment 스니펫** (정적, document 모드용): `tabs.html`, `diff-view.html`, `chart-svg.html` — CSS+마크업 조각. `base.html`에 인라인한다.
-- **Full-document skeleton** (interactive, editor/deck/sandbox용): `triage-board.html`, `toggle-editor.html`, `prompt-tuner.html`, `slide-deck.html`, `slider-sandbox.html` — 그 자체가 더블클릭으로 열리는 완성 문서. 해당 모드에서는 이 파일을 **통째로 복사해 skeleton으로 쓰고** 내용을 적응시킨다 (`base.html`을 쓰지 않는다).
+**Two kinds of component** (`assets/components/`):
+- **Fragment snippets** (static, for document mode): `tabs.html`, `diff-view.html`, `chart-svg.html` — CSS + markup pieces. Inline them into `base.html`.
+- **Full-document skeletons** (interactive, for editor/deck/sandbox): `triage-board.html`, `toggle-editor.html`, `prompt-tuner.html`, `slide-deck.html`, `slider-sandbox.html` — each is already a complete document that opens on double-click. In those modes, **copy the whole file as the skeleton** and adapt its content (do not use `base.html`).
 
-조립 규칙:
-1. **document 모드**: `assets/base.html`에서 시작 → 필요한 fragment 스니펫의 CSS를 `<style>`에, (있으면) 마크업을 body에 인라인.
-2. **editor/deck/sandbox 모드**: 모드에 맞는 full-document 컴포넌트를 복사 → source 데이터로 채우고 적응. `export-primitives.js`의 `MDH.*`가 이미 들어있지 않으면 `<script>` 맨 앞에 인라인.
-3. **충돌 방지 네임스페이스**: component 클래스는 `mdh-` prefix (`.mdh-deck`, `.mdh-board`), JS는 단일 `window.MDH` 네임스페이스 + IIFE. (한 파일에 여러 컴포넌트를 합칠 때만 중요)
-4. export 프리미티브 (`MDH.copy`, `MDH.download`)의 정본은 `assets/components/export-primitives.js`.
-5. escape 헬퍼: 텍스트는 `textContent`, 속성은 escape. `innerHTML`은 **사용자 데이터에 절대 금지**.
+Assembly rules:
+1. **document mode**: start from `assets/base.html` → inline the CSS of the needed fragment snippets into `<style>` and their markup (if any) into the body.
+2. **editor/deck/sandbox mode**: copy the full-document component matching the mode → fill it with source data and adapt. If `MDH.*` from `export-primitives.js` is not already present, inline it at the top of the `<script>`.
+3. **Collision-proof namespace**: component classes use the `mdh-` prefix (`.mdh-deck`, `.mdh-board`); JS uses a single `window.MDH` namespace inside an IIFE. (Only matters when combining several components in one file.)
+4. The canonical source of the export primitives (`MDH.copy`, `MDH.download`) is `assets/components/export-primitives.js`.
+5. Escape helpers: text goes through `textContent`, attributes are escaped. `innerHTML` is **absolutely forbidden for user data**.
 
-JS 허용 범위 (invariant 9):
-- **금지**: `fetch(`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `navigator.sendBeacon`, URL `import()`, 원격 `src`/`href`, `@import url(http…)`
-- **허용**: `navigator.clipboard.writeText`, `document.execCommand('copy')`, `URL.createObjectURL`+`<a>.click()`로 로컬 파일 다운로드
+JS scope (invariant 9):
+- **Forbidden**: `fetch(`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `navigator.sendBeacon`, URL `import()`, remote `src`/`href`, `@import url(http…)`
+- **Allowed**: `navigator.clipboard.writeText`, `document.execCommand('copy')`, local file download via `URL.createObjectURL` + `<a>.click()`
 
 ---
 
@@ -144,12 +146,12 @@ JS 허용 범위 (invariant 9):
 
 1. **Read every source .md in full.** No summarizing, no skimming.
 2. **Route the mode.** Plan/spec/doc → document. Explicit tool request → editor/deck/sandbox.
-3. **List the spatial moments.** 모든 flatten된 2D/관계 콘텐츠를 찾는다. (document mode)
-4. **Plan the sidebar.** Sections (anchor list) + glossary (acronyms) + peer links. Section labels: 240px에 맞게 짧게.
+3. **List the spatial moments.** Find every flattened 2D/relational piece of content. (document mode)
+4. **Plan the sidebar.** Sections (anchor list) + glossary (acronyms) + peer links. Keep section labels short enough to fit 240px.
 5. **Pick the skeleton by mode.** document → `assets/base.html` + inline fragment snippets (tabs/diff/chart). editor/deck/sandbox → copy the matching full-document component (`triage-board`/`toggle-editor`/`prompt-tuner`/`slide-deck`/`slider-sandbox`) and adapt it.
 6. **Fill the body** per source. Escape markdown-origin text, replace placeholders, delete unused example snippets, add components per transform table.
 7. **Verify before reporting done** (see Verification checklist below).
-8. **External link 추천.** source에 이미 있는 링크는 `<a href>`로 그대로 옮긴다 (하이퍼링크는 asset이 아니다 — 오프라인 동작에 영향 없음). 그 외에 "여기 외부 참조가 있으면 좋겠다" 싶은 지점(인용된 스펙, 논문, 도구 문서)은 **HTML에 임의로 넣지 말고**, 생성이 끝난 뒤 사용자에게 "이 섹션에 X 링크를 걸까요?"로 제안한다.
+8. **Suggest external links.** Links already present in the source carry over as-is into `<a href>` (a hyperlink is not an asset — it does not affect offline behavior). For any other spot where an external reference would help (a cited spec, paper, or tool doc), **do not insert it into the HTML on your own**; after generation, ask the user "should I link X in this section?"
 
 ---
 
@@ -164,11 +166,11 @@ python3 <skill-dir>/scripts/validate_output.py \
 # Windows
 python <skill-dir>/scripts/validate_output.py ...
 ```
-`<skill-dir>`는 이 skill 자신의 디렉터리 — harness가 skill을 로드할 때 알려준다. `md-to-html/scripts/...` 같은 repo-relative 경로는 이 저장소 안에서만 풀린다; skill은 자신이 동작하는 저장소 바깥에 설치된다.
+`<skill-dir>` is this skill's own directory — the harness reports it when loading the skill. A repo-relative path such as `md-to-html/scripts/...` only resolves inside this repository; the skill gets installed outside the repository it operates on.
 
 Add flags as applicable: `--peer <peer.html>`, `--require-modmap`, `--forbid-svg`, `--require-export`.
 
-**Document mode 추가 점검:**
+**Document mode, additional checks:**
 - Every .md section has an HTML counterpart (use .md TOC as checklist).
 - Every code block survived (count them).
 - File opens standalone — no `<link>`, no `<script src=...>`, no remote asset URLs on `img`/`iframe`/`source`. A remote `<a href>` hyperlink is fine.
@@ -177,14 +179,14 @@ Add flags as applicable: `--peer <peer.html>`, `--require-modmap`, `--forbid-svg
 - Footer attribution line present.
 - SVG audit (invariant 7): file-layout/module/architecture section → `<figure class="modmap">` containing `<svg>`.
 
-**Editor/sandbox mode 추가 점검:**
+**Editor/sandbox mode, additional checks:**
 - Export control exists (copy/download button).
 - `MDH.copy` or `MDH.download` in the `<script>` block.
 - Data items from source all present in DOM.
 - No network calls (`fetch(`, `XMLHttpRequest`, etc.).
 - JS-off: data visible as static list/table.
 
-**Deck mode 추가 점검:**
+**Deck mode, additional checks:**
 - Slide DOM elements present (`.mdh-slide` or equivalent).
 - Key handler (arrow keys) in `<script>`.
 - No-JS fallback: slides stack vertically.
@@ -193,22 +195,22 @@ Add flags as applicable: `--peer <peer.html>`, `--require-modmap`, `--forbid-svg
 
 ## Anti-patterns
 
-- **Pandoc-style 1:1 변환** — 선형 구조 유지. 이 skill은 *shape transformation*.
-- **File/module 섹션을 styled list로** (`.file-list`, `.file-row` 등) — invariant 7가 막는 실패 패턴. SVG module map 그려라.
-- **외부 폰트 / CDN** — 더블클릭+오프라인 파괴.
-- **JS가 fetch·beacon으로 네트워크 호출** — 완전 금지.
-- **JS 꺼지면 빈 화면** — progressive enhancement 위반 (invariant 8).
-- **export 없는 editor** — 양방향 루프가 핵심인데 누락 (invariant: editor mode requires export).
-- **평범한 문서에 interactive 모드 over-fire** — router 기본은 document.
-- **사용자 데이터에 `innerHTML`** — XSS (invariant 10).
-- **원문 누락 / unescape** — prose가 diagram으로 대체되면 안 됨.
-- **`.md` 삭제 또는 덮어쓰기** — never.
-- **Generic titles** — 문서 실제 제목 사용; 없으면 파일명에서 파생.
+- **Pandoc-style 1:1 conversion** — keeps the linear structure. This skill is about *shape transformation*.
+- **File/module sections as a styled list** (`.file-list`, `.file-row`, etc.) — the failure pattern invariant 7 exists to block. Draw the SVG module map.
+- **External fonts / CDN** — breaks double-click-and-offline.
+- **JS making network calls via fetch or beacon** — completely forbidden.
+- **Blank screen when JS is off** — violates progressive enhancement (invariant 8).
+- **Editor without export** — the two-way loop is the whole point (invariant: editor mode requires export).
+- **Over-firing an interactive mode on an ordinary document** — the router default is document.
+- **`innerHTML` with user data** — XSS (invariant 10).
+- **Dropped or unescaped source text** — a diagram must never replace the prose.
+- **Deleting or overwriting the `.md`** — never.
+- **Generic titles** — use the document's real title; derive one from the filename if absent.
 
 ---
 
 ## Migration Note
 
-이 skill은 `md-to-spatial-html`의 후속(successor)이다. 기존 document 변환은 **document 모드**로 그대로 살아남는다. `md-to-spatial-html` 디렉터리는 제거됨. 기존 트리거("이거 HTML로", "spatial HTML version", "plan을 HTML로" 등)는 모두 이 skill이 흡수한다.
+This skill is the successor to `md-to-spatial-html`. The original document conversion survives unchanged as **document mode**. The `md-to-spatial-html` directory has been removed. All of its old triggers ("make this HTML", "spatial HTML version", "turn the plan into HTML", and the same phrases in other languages) are absorbed by this skill.
 
-Prior plan `vault/plans/20260528_md_to_spatial_html_skill_improvement.md`는 역사적 기록으로 보존. 본 skill의 `vault/plans/20260625_md_to_html_skill.md`가 그 forward-looking 부분을 대체한다.
+The prior plan `vault/plans/20260528_md_to_spatial_html_skill_improvement.md` is kept as a historical record. This skill's `vault/plans/20260625_md_to_html_skill.md` supersedes its forward-looking parts.
