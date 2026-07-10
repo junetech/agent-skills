@@ -1,0 +1,194 @@
+<!--
+  triage-board.html — Draggable ticket triage board with copy-as-markdown (editor mode)
+
+  WHEN TO USE: Source is a list of tickets, tasks, or items to be triaged/prioritized.
+  User can drag cards between columns. Export: "Copy as Markdown" reflects current state.
+
+  INVARIANTS (must hold):
+  - Data is in static DOM (invariant 8): without JS, tickets render as plain lists per column.
+  - No network calls.
+  - Export control present: "Copy as Markdown" button (required for editor mode).
+  - textContent for user data, never innerHTML on untrusted content (invariant 10).
+
+  WHAT TO FILL:
+  - Replace BOARD_TITLE, COLUMN headers (col-title), ticket items (data-id, data-prio)
+  - Add real ticket content inside .mdh-card elements
+  - SOURCE_PATH for footer
+
+  CLASS PREFIX: mdh-board, mdh-card, mdh-col (no conflict with base.html classes)
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BOARD_TITLE</title>
+<style>
+  :root {
+    --bg: #f5f5f0; --surface: #fff; --border: #e0deda;
+    --text: #1a1a1a; --muted: #666; --accent: #2454b8;
+    --ok: #1e7a3a; --warn: #a55a07; --danger: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
+  h1 { font-size: 20px; margin: 0; }
+  .mdh-board-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 16px 24px; display: flex; align-items: center; gap: 16px;
+  }
+  .mdh-export-btn {
+    margin-left: auto; padding: 7px 16px; background: var(--accent); color: #fff;
+    border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  .mdh-export-btn:hover { opacity: .88; }
+
+  /* No-JS fallback: columns as vertical blocks */
+  .mdh-columns { display: flex; gap: 16px; padding: 20px 24px; overflow-x: auto; align-items: flex-start; }
+  .mdh-col { flex: 1; min-width: 220px; background: #ededea; border-radius: 8px; padding: 12px; }
+  .mdh-col.drag-over { background: #eef2ff; box-shadow: inset 0 0 0 2px var(--accent); }
+  .mdh-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+  .mdh-col-count { font-size: 11px; background: #ddd; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
+
+  .mdh-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; margin-bottom: 8px; cursor: grab; user-select: none;
+  }
+  .mdh-card:active { cursor: grabbing; }
+  .mdh-card.dragging { opacity: .5; }
+  .mdh-card.drag-over { border-color: var(--accent); background: #eef2ff; }
+  .mdh-card-id { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .mdh-card-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .mdh-card-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mdh-prio { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 9px; }
+  .mdh-prio.high   { background: #fbe2e0; color: var(--danger); }
+  .mdh-prio.medium { background: #fbeed5; color: var(--warn); }
+  .mdh-prio.low    { background: #e3f2e9; color: var(--ok); }
+
+  footer { font-size: 11.5px; color: #999; padding: 16px 24px; }
+</style>
+</head>
+<body>
+
+<div class="mdh-board-header">
+  <h1>BOARD_TITLE</h1>
+  <button class="mdh-export-btn" id="export-btn">Copy as Markdown</button>
+</div>
+
+<div class="mdh-columns" id="board">
+
+  <div class="mdh-col" id="col-backlog" data-col="Backlog">
+    <div class="mdh-col-title">Backlog <span class="mdh-col-count" id="cnt-backlog">2</span></div>
+    <div class="mdh-card" draggable="true" data-id="TICKET-01" data-prio="high">
+      <div class="mdh-card-id">TICKET-01</div>
+      <div class="mdh-card-title">Ticket title from source</div>
+      <div class="mdh-card-meta"><span class="mdh-prio high">high</span></div>
+    </div>
+    <div class="mdh-card" draggable="true" data-id="TICKET-02" data-prio="medium">
+      <div class="mdh-card-id">TICKET-02</div>
+      <div class="mdh-card-title">Another ticket from source</div>
+      <div class="mdh-card-meta"><span class="mdh-prio medium">medium</span></div>
+    </div>
+  </div>
+
+  <div class="mdh-col" id="col-todo" data-col="To Do">
+    <div class="mdh-col-title">To Do <span class="mdh-col-count" id="cnt-todo">1</span></div>
+    <div class="mdh-card" draggable="true" data-id="TICKET-03" data-prio="low">
+      <div class="mdh-card-id">TICKET-03</div>
+      <div class="mdh-card-title">Ticket three from source</div>
+      <div class="mdh-card-meta"><span class="mdh-prio low">low</span></div>
+    </div>
+  </div>
+
+  <div class="mdh-col" id="col-done" data-col="Done">
+    <div class="mdh-col-title">Done <span class="mdh-col-count" id="cnt-done">0</span></div>
+  </div>
+
+</div>
+
+<footer>Source: <code>SOURCE_PATH</code> (markdown remains authoritative; this HTML is a view).</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- Export primitives (from export-primitives.js) ---
+  window.MDH = window.MDH || {};
+  MDH.copy = function(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).catch(function() { MDH._legacyCopy(text); });
+    } else { MDH._legacyCopy(text); }
+  };
+  MDH._legacyCopy = function(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } finally { ta.remove(); }
+  };
+
+  // --- Drag and drop ---
+  var dragged = null;
+  var board = document.getElementById('board');
+
+  board.addEventListener('dragstart', function(e) {
+    dragged = e.target.closest('.mdh-card');
+    if (dragged) dragged.classList.add('dragging');
+  });
+  board.addEventListener('dragend', function() {
+    if (dragged) dragged.classList.remove('dragging');
+    dragged = null;
+    updateCounts();
+  });
+  board.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    var col = e.target.closest('.mdh-col');
+    if (col && dragged && !col.contains(dragged)) {
+      col.classList.add('drag-over');
+    }
+  });
+  board.addEventListener('dragleave', function(e) {
+    var col = e.target.closest('.mdh-col');
+    if (col) col.classList.remove('drag-over');
+  });
+  board.addEventListener('drop', function(e) {
+    e.preventDefault();
+    var col = e.target.closest('.mdh-col');
+    if (col && dragged) {
+      col.classList.remove('drag-over');
+      col.appendChild(dragged);
+    }
+    updateCounts();
+  });
+
+  function updateCounts() {
+    document.querySelectorAll('.mdh-col').forEach(function(col) {
+      var id = col.id.replace('col-', 'cnt-');
+      var cnt = document.getElementById(id);
+      if (cnt) cnt.textContent = col.querySelectorAll('.mdh-card').length;
+    });
+  }
+
+  // --- Export as Markdown ---
+  document.getElementById('export-btn').addEventListener('click', function() {
+    var lines = ['# ' + document.querySelector('h1').textContent, ''];
+    document.querySelectorAll('.mdh-col').forEach(function(col) {
+      var colName = col.dataset.col || col.querySelector('.mdh-col-title').textContent.trim();
+      lines.push('## ' + colName);
+      col.querySelectorAll('.mdh-card').forEach(function(card) {
+        var id = card.querySelector('.mdh-card-id').textContent;
+        var title = card.querySelector('.mdh-card-title').textContent;
+        var prio = card.querySelector('.mdh-prio');
+        var prioText = prio ? ' [' + prio.textContent + ']' : '';
+        lines.push('- ' + id + ': ' + title + prioText);
+      });
+      lines.push('');
+    });
+    MDH.copy(lines.join('\n'));
+    var btn = document.getElementById('export-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy as Markdown'; }, 1800);
+  });
+})();
+</script>
+
+</body>
+</html>

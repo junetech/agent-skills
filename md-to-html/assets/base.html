@@ -1,34 +1,50 @@
 <!doctype html>
 <!--
-  Starting skeleton for the md-to-spatial-html skill.
+  Starting skeleton for the md-to-html skill (document mode).
   Copy this file, replace document-specific text, and add/remove components per the source .md.
-  All component classes used here are pre-styled below — do not invent new class names
-  unless the source needs a shape this template doesn't already cover.
+  For editor/deck/sandbox modes, inline the relevant component CSS+JS from assets/components/.
 
-  Component classes available:
+  Component classes available (document mode, no JS required):
     .tldr                   highlighted at-a-glance box (top of doc)
-    .card  + .card.template / .card.not-template     comparison cards (✓ / ✗)
+    .card  + .card.template / .card.not-template     comparison cards (checkmark / x)
     .grid-2                                          two-column grid
     .decisions > .decision                           decision strip rows
     .decision.deferred                               muted variant for out-of-scope
-    .scenario-matrix                                 2-axis or N-axis variant grid
-    .pipeline                                        horizontal step→step flow
-    .partition-fig                                   wrapper for inline SVG bands
+    .scenario-matrix                                 2-axis or N-axis variant grid (set --matrix-cols)
+    .pipeline                                        horizontal step->step flow
+    .partition-fig                                   wrapper for inline SVG region bands
     .modmap                                          wrapper for inline SVG module map
     .risks > .risk + .risk.sev-{high,med,low}        color-coded risk cards
-    .helpers                                         tighter table for symbol→path
+    .helpers                                         tighter table for symbol->path
     .badge.{ok,warn,danger,info,muted}               inline severity chips
     .invariants                                      green "must hold" box
     .override-banner                                 amber/red callout
     ol.tests                                         numbered test list
     ul.plain                                         dashed-separator list (sidebar glossary)
     <details>                                        collapsible long blocks
+
+  Interactive mode components (inline CSS+JS from assets/components/):
+    mdh-deck    slide-deck.html
+    mdh-board   triage-board.html
+    mdh-toggle  toggle-editor.html
+    mdh-tuner   prompt-tuner.html
+    mdh-slider  slider-sandbox.html
+
+  Namespace conventions (when JS is used):
+    - CSS classes: mdh- prefix
+    - JS: window.MDH namespace + IIFE
+    - Export primitives: copy from export-primitives.js into the <script> block
+
+  Placeholders to replace (all must be replaced before shipping):
+    DOCUMENT_TITLE    - the page/document title
+    SOURCE_FILENAME   - e.g. plan.md
+    SOURCE_PATH       - e.g. docs/plan.md (relative path as displayed)
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Document title</title>
+<title>DOCUMENT_TITLE</title>
 <style>
   :root {
     --bg: #fafaf7;
@@ -161,8 +177,11 @@
   .decision.deferred { border-left-color: var(--faint); background: #f4f3ed; }
   .decision.deferred .key { color: var(--faint); }
 
+  /* scenario-matrix: set --matrix-cols to match column count, e.g.:
+     style="--matrix-cols: 80px repeat(3, minmax(120px, 1fr));"
+     The first column is the row header; remaining columns are data columns. */
   .scenario-matrix {
-    display: grid; grid-template-columns: var(--matrix-cols, 80px repeat(2, minmax(120px, 1fr))); gap: 8px; margin: 16px 0; max-width: 720px;
+    display: grid; grid-template-columns: var(--matrix-cols, 80px repeat(2, minmax(120px, 1fr))); gap: 8px; margin: 16px 0;
     font-size: 13.5px;
   }
   .scenario-matrix .head, .scenario-matrix .row-head {
@@ -234,30 +253,30 @@
 <div class="layout">
 
 <nav class="toc">
-  <div class="title">Document title</div>
-  <div class="crumb">source.md</div>
+  <div class="title">DOCUMENT_TITLE</div>
+  <div class="crumb">SOURCE_FILENAME</div>
   <!-- Peer links (omit if no siblings):
-  <a href="peer.html" style="color: var(--accent); font-size: 12.5px;">→ Peer document</a>
+  <a href="peer.html" style="color: var(--accent); font-size: 12.5px;">&#x2192; Peer document</a>
   -->
 
   <div class="label">Sections</div>
   <a href="#tldr">At a glance</a>
-  <!-- one anchor per <h2 id="..."> -->
+  <!-- one anchor per <h2 id="..."> in body -->
 
   <!-- Omit the glossary block entirely if the source has no acronyms or jargon.
   <div class="label">Glossary</div>
   <ul class="plain">
-    <li><b>TERM</b> — escaped definition</li>
+    <li><b>TERM</b> &#x2014; escaped definition</li>
   </ul>
   -->
 </nav>
 
 <main>
 
-<h1>Document title</h1>
+<h1>DOCUMENT_TITLE</h1>
 <div class="meta">
-  <span>source.md</span>
-  <!-- · <span>Companion: <a href="peer.html">Peer document</a></span> -->
+  <span>SOURCE_FILENAME</span>
+  <!-- &#xB7; <span>Companion: <a href="peer.html">Peer document</a></span> -->
 </div>
 
 <section id="tldr" class="tldr">
@@ -274,14 +293,14 @@
 <h2 id="context">Context</h2>
 <div class="grid-2">
   <div class="card not-template">
-    <h4>✗ Not the template <span class="badge warn">reason</span></h4>
-    <div class="path">{{path/to/code.py}}</div>
-    <p>{{why this one isn't the model}}</p>
+    <h4>&#x2717; Option A <span class="badge warn">reason</span></h4>
+    <div class="path">path/to/option-a</div>
+    <p>Why this option was not chosen.</p>
   </div>
   <div class="card template">
-    <h4>✓ Structural template <span class="badge ok">reason</span></h4>
-    <div class="path">{{path/to/template.py}}</div>
-    <p>{{why this one is the model}}</p>
+    <h4>&#x2713; Option B (chosen) <span class="badge ok">reason</span></h4>
+    <div class="path">path/to/option-b</div>
+    <p>Why this option was chosen.</p>
   </div>
 </div>
 -->
@@ -290,37 +309,37 @@
 <h2 id="decisions">Decisions <span class="badge info">final</span></h2>
 <div class="decisions">
   <div class="decision">
-    <div class="key">{{Key}}</div>
-    <div class="val">{{Value / rationale}}</div>
+    <div class="key">Key</div>
+    <div class="val">Value / rationale</div>
   </div>
   <div class="decision deferred">
-    <div class="key">{{Deferred key}}</div>
-    <div class="val">{{Why deferred + when to revisit}}</div>
+    <div class="key">Deferred key</div>
+    <div class="val">Why deferred + when to revisit</div>
   </div>
 </div>
 -->
 
-<!-- Scenario matrix (set --matrix-cols to match the number of headers)
-<h3>Grid</h3>
+<!-- Scenario matrix (set --matrix-cols to match number of data columns + 1 row-head col)
+<h3>Variants</h3>
 <div class="scenario-matrix" style="--matrix-cols: 80px repeat(3, minmax(120px, 1fr));">
   <div></div>
-  <div class="head">{{Col A}}</div>
-  <div class="head">{{Col B}}</div>
-  <div class="head">{{Col C}}</div>
-  <div class="row-head">{{Row 1}}</div>
-  <div class="cell"><div class="name">{{name_a1}}</div><div class="desc">{{desc}}</div></div>
-  <div class="cell"><div class="name">{{name_b1}}</div><div class="desc">{{desc}}</div></div>
-  <div class="cell"><div class="name">{{name_c1}}</div><div class="desc">{{desc}}</div></div>
+  <div class="head">Col A</div>
+  <div class="head">Col B</div>
+  <div class="head">Col C</div>
+  <div class="row-head">Row 1</div>
+  <div class="cell"><div class="name">name_a1</div><div class="desc">description</div></div>
+  <div class="cell"><div class="name">name_b1</div><div class="desc">description</div></div>
+  <div class="cell"><div class="name">name_c1</div><div class="desc">description</div></div>
 </div>
 -->
 
 <!-- Pipeline / flow
 <div class="pipeline">
-  <h4>{{What flows where}}</h4>
+  <h4>What flows where</h4>
   <div class="flow">
-    <span class="step">{{step 1}}</span><span class="arrow">→</span>
-    <span class="step">{{step 2}}</span><span class="arrow">→</span>
-    <span class="step">{{step 3}}</span>
+    <span class="step">step 1</span><span class="arrow">&#x2192;</span>
+    <span class="step">step 2</span><span class="arrow">&#x2192;</span>
+    <span class="step">step 3</span>
   </div>
 </div>
 -->
@@ -334,24 +353,19 @@
     <rect x="280" y="40" width="200" height="120" fill="#5fb37a" opacity=".85" rx="3"/>
     <rect x="480" y="40" width="120" height="120" fill="#7aa3d0" opacity=".75" rx="3"/>
     <rect x="600" y="40" width="140" height="120" fill="#444"   opacity=".85" rx="3"/>
-    <text x="90"  y="22" font-size="13" font-weight="600" text-anchor="middle" font-family="system-ui">{{REGION 1}}</text>
-    <text x="220" y="22" font-size="13" font-weight="600" text-anchor="middle" font-family="system-ui">{{REGION 2}}</text>
-    <text x="380" y="22" font-size="13" font-weight="700" text-anchor="middle" font-family="system-ui">{{FOCUS}}</text>
-    <text x="540" y="22" font-size="13" font-weight="600" text-anchor="middle" font-family="system-ui">{{REGION 4}}</text>
-    <text x="670" y="22" font-size="13" font-weight="600" text-anchor="middle" font-family="system-ui">{{REGION 5}}</text>
+    <text x="90"  y="22" font-size="13" font-weight="600" text-anchor="middle" font-family="system-ui">REGION 1</text>
+    <text x="220" y="22" font-size="13" font-weight="600" text-anchor="middle" font-family="system-ui">REGION 2</text>
+    <text x="380" y="22" font-size="13" font-weight="700" text-anchor="middle" font-family="system-ui">FOCUS</text>
+    <text x="540" y="22" font-size="13" font-weight="600" text-anchor="middle" font-family="system-ui">REGION 4</text>
+    <text x="670" y="22" font-size="13" font-weight="600" text-anchor="middle" font-family="system-ui">REGION 5</text>
   </svg>
-  <figcaption>{{Caption explaining what the diagram shows}}</figcaption>
+  <figcaption>Caption explaining what the diagram shows.</figcaption>
 </figure>
 -->
 
-<!-- Inline SVG module map — MANDATORY when source has a file-layout / module / architecture section (see SKILL.md rule 7).
-     This is the load-bearing component people most often miss. The fully-worked example
-     below shows the common shape: zone-grouped boxes (green=new, amber=existing,
-     blue=reused) with solid arrows for hard wiring and dashed for soft reuse.
-     Adapt zone count, box count, and arrow styling to the source — but do NOT
-     substitute a styled list or a plain table. Keep labels short inside SVG
-     boxes; preserve exact long paths and source bullets as escaped prose or a
-     table below the diagram.
+<!-- Inline SVG module map - MANDATORY when source has a file-layout / module / architecture section.
+     Keep labels SHORT inside SVG boxes (file basename, not full path).
+     Preserve full paths and source bullets as escaped prose or a table BELOW the figure.
 
 <figure class="modmap">
   <svg viewBox="0 0 760 280" width="100%" style="max-width: 740px; display:block; margin:0 auto;" xmlns="http://www.w3.org/2000/svg">
@@ -361,29 +375,25 @@
       </marker>
     </defs>
     <rect x="20"  y="20" width="320" height="200" fill="#f4faee" stroke="#c2d5b5" rx="6"/>
-    <text x="180" y="40" font-size="12" font-weight="700" text-anchor="middle" fill="#1e7a3a" font-family="system-ui">{{ZONE A}}</text>
+    <text x="180" y="40" font-size="12" font-weight="700" text-anchor="middle" fill="#1e7a3a" font-family="system-ui">ZONE A (new)</text>
     <rect x="40"  y="56"  width="280" height="32" fill="#fff" stroke="#2454b8" rx="4"/>
-    <text x="180" y="76"  font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{short_label_a}}</text>
+    <text x="180" y="76"  font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">module_a.py</text>
     <rect x="40"  y="96"  width="280" height="32" fill="#fff" stroke="#2454b8" rx="4"/>
-    <text x="180" y="116" font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{short_label_b}}</text>
-    <rect x="40"  y="136" width="280" height="32" fill="#fff" stroke="#2454b8" rx="4"/>
-    <text x="180" y="156" font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">{{short_label_c}}</text>
+    <text x="180" y="116" font-size="12" text-anchor="middle" font-family="ui-monospace, monospace">module_b.py</text>
     <rect x="400" y="20"  width="340" height="120" fill="#fbf3eb" stroke="#e7d5c5" rx="6"/>
-    <text x="570" y="40"  font-size="12" font-weight="700" text-anchor="middle" fill="#a55a07" font-family="system-ui">{{ZONE B}}</text>
+    <text x="570" y="40"  font-size="12" font-weight="700" text-anchor="middle" fill="#a55a07" font-family="system-ui">ZONE B (existing)</text>
     <rect x="420" y="56"  width="300" height="32" fill="#fff" stroke="#a55a07" rx="4"/>
-    <text x="570" y="76"  font-size="11.5" text-anchor="middle" font-family="ui-monospace, monospace">{{existing_file_1}}</text>
-    <rect x="420" y="96"  width="300" height="32" fill="#fff" stroke="#a55a07" rx="4"/>
-    <text x="570" y="116" font-size="11.5" text-anchor="middle" font-family="ui-monospace, monospace">{{existing_file_2}}</text>
-    <rect x="400" y="160" width="340" height="100" fill="#e6edfa" stroke="#2454b8" rx="6"/>
-    <text x="570" y="180" font-size="12" font-weight="700" text-anchor="middle" fill="#1f5a8a" font-family="system-ui">{{ZONE C}}</text>
-    <rect x="420" y="196" width="300" height="32" fill="#fff" stroke="#1f5a8a" rx="4"/>
-    <text x="570" y="216" font-size="11.5" text-anchor="middle" font-family="ui-monospace, monospace">{{shared_file}}</text>
+    <text x="570" y="76"  font-size="11.5" text-anchor="middle" font-family="ui-monospace, monospace">existing_file.py</text>
     <line x1="320" y1="72"  x2="420" y2="72"  stroke="#7a7a72" stroke-width="1.2" marker-end="url(#arrow)"/>
-    <line x1="320" y1="112" x2="420" y2="112" stroke="#7a7a72" stroke-width="1.2" marker-end="url(#arrow)"/>
-    <line x1="320" y1="152" x2="420" y2="212" stroke="#7a7a72" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+    <line x1="320" y1="112" x2="420" y2="112" stroke="#7a7a72" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
   </svg>
-  <figcaption>Solid arrows: {{new package wires into existing files}}. Dashed arrows: {{new package reuses (does not duplicate) shared infra}}.</figcaption>
+  <figcaption>Solid arrows: hard dependency. Dashed arrows: reuse without copy.</figcaption>
 </figure>
+-->
+<!-- Preserve full paths as prose below the modmap, e.g.:
+<ul>
+  <li><code>src/analytics/cache/__init__.py</code> &#x2014; re-exports CacheClient, CacheKey, CacheMissError</li>
+</ul>
 -->
 
 <!-- Risk cards
@@ -391,26 +401,26 @@
 <div class="risks">
   <div class="risk sev-high">
     <div class="hd">
-      <h4>1. {{Risk title}}</h4>
+      <h4>1. Risk title</h4>
       <span class="badge danger">high</span>
     </div>
-    <div class="body">{{Description, mitigation, verification}}</div>
+    <div class="body">Description, mitigation, verification.</div>
   </div>
   <div class="risk sev-med">
-    <div class="hd"><h4>2. {{Risk}}</h4><span class="badge warn">medium</span></div>
-    <div class="body">…</div>
+    <div class="hd"><h4>2. Risk</h4><span class="badge warn">medium</span></div>
+    <div class="body">Description.</div>
   </div>
   <div class="risk sev-low">
-    <div class="hd"><h4>3. {{Risk}}</h4><span class="badge ok">low</span></div>
-    <div class="body">…</div>
+    <div class="hd"><h4>3. Risk</h4><span class="badge ok">low</span></div>
+    <div class="body">Description.</div>
   </div>
 </div>
 -->
 
 <!-- Collapsible long block
 <details open>
-  <summary>{{Pseudocode / config / long quote}}</summary>
-  <pre><code>{{block contents}}</code></pre>
+  <summary>Pseudocode / config / long quote</summary>
+  <pre><code>block contents here</code></pre>
 </details>
 -->
 
@@ -418,24 +428,24 @@
 <div class="invariants">
   <h4>Invariants (test target)</h4>
   <ul>
-    <li>{{Property 1 that must hold}}</li>
-    <li>{{Property 2}}</li>
+    <li>Property 1 that must hold.</li>
+    <li>Property 2.</li>
   </ul>
 </div>
 -->
 
 <!-- Override / warning banner
 <div class="override-banner">
-  <b>Override notice.</b> {{What this overrides and why}}
+  <b>Override notice.</b> What this overrides and why.
 </div>
 -->
 
-<!-- Helpers table (symbol → path)
+<!-- Helpers table (symbol to path)
 <div class="helpers">
 <table>
   <thead><tr><th>Symbol</th><th>Path</th></tr></thead>
   <tbody>
-    <tr><td><code>{{symbol}}</code></td><td>{{path:line}}</td></tr>
+    <tr><td><code>SymbolName</code></td><td>src/path/to/file.py:42</td></tr>
   </tbody>
 </table>
 </div>
@@ -443,13 +453,13 @@
 
 <!-- Numbered test list
 <ol class="tests">
-  <li>{{tests/path/to/test_a.py}}</li>
-  <li>{{tests/path/to/test_b.py}}</li>
+  <li>tests/path/to/test_a.py</li>
+  <li>tests/path/to/test_b.py</li>
 </ol>
 -->
 
 <hr>
-<p style="font-size: 12px; color: var(--faint);">Source: <code>source.md</code> (markdown remains authoritative; this HTML is a spatial view).</p>
+<p style="font-size: 12px; color: var(--faint);">Source: <code>SOURCE_PATH</code> (markdown remains authoritative; this HTML is a view).</p>
 
 </main>
 </div>

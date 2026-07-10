@@ -1,0 +1,60 @@
+<!--
+  chart-svg.html — Inline SVG bar chart and sparkline (document mode, no JS)
+
+  WHEN TO USE: Source contains numeric data (metrics, comparison numbers, timeseries).
+  Use ONLY when actual data values exist in the source — never fabricate numbers.
+  No charting library; all SVG by hand. Self-contained, no network.
+
+  WHAT TO FILL:
+  - BAR CHART: set viewBox height to (N_bars * bar_height + padding), update rects
+  - SPARKLINE: set points to (x,y) pairs derived from your data series
+  - Replace axis labels, values, and caption
+
+  CLASS PREFIX: mdh-chart (no conflict with base.html classes)
+
+  NOTE: For complex charts, consider whether an HTML table conveys the data better.
+  A simple table is always preferable to a fabricated or approximate SVG chart.
+-->
+<style>
+  .mdh-chart { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 14px 0; box-shadow: var(--shadow); }
+  .mdh-chart-title { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 10px; }
+  .mdh-chart svg { display: block; width: 100%; }
+  .mdh-chart figcaption { font-size: 11.5px; color: var(--faint); margin-top: 8px; text-align: center; }
+</style>
+
+<!-- Horizontal bar chart example -->
+<figure class="mdh-chart">
+  <div class="mdh-chart-title">CHART_TITLE</div>
+  <svg viewBox="0 0 460 160" xmlns="http://www.w3.org/2000/svg" aria-label="CHART_TITLE">
+    <!-- Y axis labels -->
+    <text x="90" y="30"  font-size="11" fill="#5e5e58" text-anchor="end" font-family="system-ui">Label A</text>
+    <text x="90" y="65"  font-size="11" fill="#5e5e58" text-anchor="end" font-family="system-ui">Label B</text>
+    <text x="90" y="100" font-size="11" fill="#5e5e58" text-anchor="end" font-family="system-ui">Label C</text>
+    <text x="90" y="135" font-size="11" fill="#5e5e58" text-anchor="end" font-family="system-ui">Label D</text>
+    <!-- Bars (x=95, width = value * scale) -->
+    <rect x="95" y="16"  width="240" height="20" fill="#2454b8" rx="3" opacity=".85"/>
+    <rect x="95" y="51"  width="180" height="20" fill="#2454b8" rx="3" opacity=".85"/>
+    <rect x="95" y="86"  width="300" height="20" fill="#2454b8" rx="3" opacity=".85"/>
+    <rect x="95" y="121" width="120" height="20" fill="#2454b8" rx="3" opacity=".85"/>
+    <!-- Value labels -->
+    <text x="340" y="30"  font-size="11" fill="#1a1a1a" font-family="ui-monospace, monospace">VALUE_A</text>
+    <text x="280" y="65"  font-size="11" fill="#1a1a1a" font-family="ui-monospace, monospace">VALUE_B</text>
+    <text x="400" y="100" font-size="11" fill="#1a1a1a" font-family="ui-monospace, monospace">VALUE_C</text>
+    <text x="220" y="135" font-size="11" fill="#1a1a1a" font-family="ui-monospace, monospace">VALUE_D</text>
+  </svg>
+  <figcaption>CHART_CAPTION (source: SOURCE_REFERENCE)</figcaption>
+</figure>
+
+<!-- Sparkline example (inline, small multiples) -->
+<!--
+<figure class="mdh-chart" style="max-width: 300px;">
+  <div class="mdh-chart-title">METRIC_NAME over time</div>
+  <svg viewBox="0 0 300 60" xmlns="http://www.w3.org/2000/svg">
+    <polyline
+      points="0,50 50,40 100,30 150,35 200,20 250,15 300,10"
+      fill="none" stroke="#2454b8" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="300" cy="10" r="3" fill="#2454b8"/>
+  </svg>
+  <figcaption>SPARKLINE_CAPTION</figcaption>
+</figure>
+-->

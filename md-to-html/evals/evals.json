@@ -1,0 +1,156 @@
+{
+  "skill_name": "md-to-html",
+  "evals": [
+    {
+      "id": 1,
+      "name": "document/rich-plan",
+      "prompt": "Convert this plan file to an HTML peer alongside it: <ABS_PATH>/test1_rich_plan.md . Keep the markdown unchanged.",
+      "expected_output": "A new .html file at <ABS_PATH>/test1_rich_plan.html. It preserves the markdown content as escaped HTML, has no unreplaced placeholders or external assets, keeps the footer attribution, preserves the code block, and renders the File layout section with figure.modmap containing inline SVG.",
+      "files": ["test1_rich_plan.md"],
+      "assertions": {
+        "mode": "document",
+        "html_files": ["test1_rich_plan.html"],
+        "markdown_unchanged": ["test1_rich_plan.md"],
+        "no_unreplaced_placeholders": true,
+        "no_external_assets": true,
+        "no_network_calls": true,
+        "footer_references_source": true,
+        "source_headings_have_anchors": true,
+        "code_blocks_preserved": true,
+        "require_modmap": true
+      }
+    },
+    {
+      "id": 2,
+      "name": "document/linked-pair",
+      "prompt": "Convert this plan and its companion detail file to HTML peers: <ABS_PATH>/test2_plan.md and <ABS_PATH>/test2_detail.md . Keep both markdown files unchanged.",
+      "expected_output": "Two new .html files (test2_plan.html, test2_detail.html). Each file preserves its source content as escaped HTML, has no unreplaced placeholders or external assets, links to the other HTML file, and has a footer referencing its own markdown source.",
+      "files": ["test2_plan.md", "test2_detail.md"],
+      "assertions": {
+        "mode": "document",
+        "html_files": ["test2_plan.html", "test2_detail.html"],
+        "markdown_unchanged": ["test2_plan.md", "test2_detail.md"],
+        "no_unreplaced_placeholders": true,
+        "no_external_assets": true,
+        "no_network_calls": true,
+        "footer_references_source": true,
+        "source_headings_have_anchors": true,
+        "peer_links": {
+          "test2_plan.html": ["test2_detail.html"],
+          "test2_detail.html": ["test2_plan.html"]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "document/prose-rfc",
+      "prompt": "Convert this RFC to HTML: <ABS_PATH>/test3_rfc.md . Keep the markdown unchanged.",
+      "expected_output": "An HTML peer at test3_rfc.html. Since the RFC is mostly prose with only one decision section and one small comparison, it uses restraint: decision/comparison styling is allowed, but fabricated SVG diagrams are not. Every paragraph is preserved as escaped HTML, with no placeholders, no external assets, and a footer referencing test3_rfc.md.",
+      "files": ["test3_rfc.md"],
+      "assertions": {
+        "mode": "document",
+        "html_files": ["test3_rfc.html"],
+        "markdown_unchanged": ["test3_rfc.md"],
+        "no_unreplaced_placeholders": true,
+        "no_external_assets": true,
+        "no_network_calls": true,
+        "footer_references_source": true,
+        "source_headings_have_anchors": true,
+        "forbid_svg": true
+      }
+    },
+    {
+      "id": 4,
+      "name": "document/tabbed-explainer",
+      "prompt": "Convert this explainer to a spatial HTML document alongside it: <ABS_PATH>/test4_tabbed_explainer.md . Use CSS-only tabs (no JS) to show the three code patterns side by side. Keep the markdown unchanged.",
+      "expected_output": "An HTML peer at test4_tabbed_explainer.html. The three code patterns (callbacks, promises, async/await) are shown as CSS-only tabbed sections using :target or <details>. All code blocks are preserved. No inline <script>. No external assets. Footer references source.",
+      "files": ["test4_tabbed_explainer.md"],
+      "assertions": {
+        "mode": "document",
+        "html_files": ["test4_tabbed_explainer.html"],
+        "markdown_unchanged": ["test4_tabbed_explainer.md"],
+        "no_unreplaced_placeholders": true,
+        "no_external_assets": true,
+        "no_network_calls": true,
+        "no_inline_script": true,
+        "footer_references_source": true,
+        "source_headings_have_anchors": true,
+        "code_blocks_preserved": true
+      }
+    },
+    {
+      "id": 5,
+      "name": "editor/triage-board",
+      "prompt": "Make a triage board from these tickets: <ABS_PATH>/test5_triage_tickets.md . I want to drag cards between Backlog, To Do, In Progress, and Done columns, then copy the result as markdown.",
+      "expected_output": "A self-contained HTML triage board at test5_triage_tickets.html. All tickets from the source appear as draggable cards in the correct initial columns. A 'Copy as Markdown' button exports the current board state. Data is in static DOM (no-JS fallback shows tickets as lists). No network calls. No external assets.",
+      "files": ["test5_triage_tickets.md"],
+      "assertions": {
+        "mode": "editor",
+        "html_files": ["test5_triage_tickets.html"],
+        "markdown_unchanged": ["test5_triage_tickets.md"],
+        "no_unreplaced_placeholders": true,
+        "no_external_assets": true,
+        "no_network_calls": true,
+        "footer_references_source": true,
+        "require_export": true,
+        "data_items_in_dom": true,
+        "progressive_enhancement": "warn"
+      }
+    },
+    {
+      "id": 6,
+      "name": "editor/feature-flags",
+      "prompt": "Make a feature flag editor from: <ABS_PATH>/test6_feature_flags.md . Each flag should be a toggle. When a flag's dependency is off but the flag is on, show an inline warning. Include a copy-diff button.",
+      "expected_output": "A self-contained HTML flag editor at test6_feature_flags.html. All 5 flags appear as toggles with their default states. Dependency violations show inline warnings. A 'Copy Diff' button copies the changed flags. Data is in static DOM (no-JS: plain table). No network calls. No external assets.",
+      "files": ["test6_feature_flags.md"],
+      "assertions": {
+        "mode": "editor",
+        "html_files": ["test6_feature_flags.html"],
+        "markdown_unchanged": ["test6_feature_flags.md"],
+        "no_unreplaced_placeholders": true,
+        "no_external_assets": true,
+        "no_network_calls": true,
+        "footer_references_source": true,
+        "require_export": true,
+        "data_items_in_dom": true,
+        "progressive_enhancement": "warn"
+      }
+    },
+    {
+      "id": 7,
+      "name": "deck/slide-deck",
+      "prompt": "Turn this post-mortem outline into a slide deck: <ABS_PATH>/test7_deck_outline.md . Arrow key navigation, slide counter. Without JS, slides should stack vertically.",
+      "expected_output": "A self-contained HTML slide deck at test7_deck_outline.html. 5 slides matching the outline sections. Arrow key navigation implemented in an inline <script>. No-JS fallback: slides stack vertically in document flow. No external assets. Footer references source.",
+      "files": ["test7_deck_outline.md"],
+      "assertions": {
+        "mode": "deck",
+        "html_files": ["test7_deck_outline.html"],
+        "markdown_unchanged": ["test7_deck_outline.md"],
+        "no_unreplaced_placeholders": true,
+        "no_external_assets": true,
+        "no_network_calls": true,
+        "footer_references_source": true,
+        "slide_dom_present": true,
+        "key_handler_present": true,
+        "progressive_enhancement": "warn"
+      }
+    },
+    {
+      "id": 8,
+      "name": "sandbox/slider",
+      "prompt": "Build a parameter sandbox from: <ABS_PATH>/test8_slider_spec.md . Sliders for duration, translate-y, opacity-start, and scale-start with a live preview of the animation. Copy-params button.",
+      "expected_output": "A self-contained HTML sandbox at test8_slider_spec.html. Sliders for the 4 numeric parameters (easing can be a select). Live preview shows an element animating with the current values. A 'Copy Params' button copies the current parameter values. No network calls. No external assets.",
+      "files": ["test8_slider_spec.md"],
+      "assertions": {
+        "mode": "sandbox",
+        "html_files": ["test8_slider_spec.html"],
+        "markdown_unchanged": ["test8_slider_spec.md"],
+        "no_unreplaced_placeholders": true,
+        "no_external_assets": true,
+        "no_network_calls": true,
+        "footer_references_source": true,
+        "require_export": true
+      }
+    }
+  ]
+}

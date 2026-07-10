@@ -3,8 +3,8 @@ name: review-pr
 description: |
   Pre-landing PR / branch review against the base branch. Use when the user wants to
   review a pull request, audit a diff before pushing or merging, or asks "review my PR",
-  "review this branch", "check before I merge", "PR 리뷰해줘", "이 브랜치 리뷰", or
-  similar. Scans for SQL injection and data-safety issues, race conditions and TOCTOU,
+  "review this branch", "check before I merge", or similar.
+  Scans for SQL injection and data-safety issues, race conditions and TOCTOU,
   LLM output trust-boundary violations, enum/state completeness, magic numbers, dead
   code, crypto weaknesses, time-window bugs, type-coercion at boundaries, and
   frontend/design anti-patterns when CSS/HTML/JSX changes. Language-agnostic —

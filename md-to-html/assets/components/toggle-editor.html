@@ -1,0 +1,275 @@
+<!--
+  toggle-editor.html — Feature flag toggle editor with dependency warnings + copy-diff (editor mode)
+
+  WHEN TO USE: Source describes feature flags, configuration toggles, or boolean settings
+  with dependencies between them. User toggles flags and copies a diff of changes.
+
+  INVARIANTS (must hold):
+  - Data is in static DOM: flags render as a readable table without JS (invariant 8).
+  - No network calls.
+  - Export control: "Copy Diff" button (required for editor mode).
+  - textContent for all flag data (invariant 10).
+
+  WHAT TO FILL:
+  - Replace FLAG_EDITOR_TITLE
+  - Fill .mdh-flag rows: data-flag, data-default ("on"/"off"), data-deps (comma-separated flag names)
+  - Add description text to .mdh-flag-desc
+  - SOURCE_PATH for footer
+
+  CLASS PREFIX: mdh-flag (no conflict with base.html classes)
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FLAG_EDITOR_TITLE</title>
+<style>
+  :root {
+    --bg: #fafaf7; --surface: #fff; --border: #e4e2da;
+    --text: #1a1a1a; --muted: #5e5e58; --faint: #8a8a82;
+    --accent: #2454b8; --ok: #1e7a3a; --warn: #a55a07; --danger: #b3261e;
+    --ok-bg: #e3f2e9; --warn-bg: #fbeed5; --danger-bg: #fbe2e0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
+  .mdh-flag-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .mdh-flag-header h1 { font-size: 20px; margin: 0; flex: 1; }
+  .mdh-copy-btn, .mdh-reset-btn {
+    padding: 7px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; border: 1px solid var(--border);
+  }
+  .mdh-copy-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .mdh-copy-btn:hover { opacity: .88; }
+  .mdh-reset-btn { background: var(--surface); color: var(--muted); }
+
+  .mdh-flag-list { max-width: 820px; margin: 24px auto; padding: 0 24px; }
+
+  /* No-JS fallback: a readable table */
+  .mdh-flag-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .mdh-flag-table th, .mdh-flag-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .mdh-flag-table th { background: #f3f2ec; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  /* JS-enhanced: toggle cards */
+  .mdh-flag-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 14px;
+  }
+  .mdh-flag-card.warn-dep { border-color: var(--warn); background: var(--warn-bg); }
+
+  .mdh-toggle-wrap { flex-shrink: 0; padding-top: 2px; }
+  .mdh-toggle { position: relative; width: 40px; height: 22px; display: inline-block; }
+  .mdh-toggle input { opacity: 0; width: 0; height: 0; }
+  .mdh-toggle-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #ccc; border-radius: 22px; transition: .2s;
+  }
+  .mdh-toggle-slider::before {
+    content: ''; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px;
+    background: #fff; border-radius: 50%; transition: .2s;
+  }
+  .mdh-toggle input:checked + .mdh-toggle-slider { background: var(--ok); }
+  .mdh-toggle input:checked + .mdh-toggle-slider::before { transform: translateX(18px); }
+
+  .mdh-flag-info { flex: 1; }
+  .mdh-flag-name { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .mdh-flag-desc { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .mdh-flag-warn { display: none; margin-top: 6px; font-size: 12.5px; color: var(--warn); font-weight: 500; }
+  .mdh-flag-card.warn-dep .mdh-flag-warn { display: block; }
+  .mdh-flag-status { font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 8px; }
+  .mdh-flag-status.on  { background: var(--ok-bg);   color: var(--ok); }
+  .mdh-flag-status.off { background: #e8e7e0;         color: var(--muted); }
+
+  .mdh-diff-preview {
+    max-width: 820px; margin: 0 auto 24px; padding: 0 24px;
+    font-family: ui-monospace, monospace; font-size: 12.5px;
+  }
+  .mdh-diff-preview h3 { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+  .mdh-diff-preview pre {
+    background: #1f2024; color: #e6e6e0; padding: 12px 14px; border-radius: 6px;
+    margin: 0; overflow-x: auto; min-height: 40px;
+  }
+  .diff-add { color: #5fb37a; }
+  .diff-del { color: #e57373; }
+
+  footer { font-size: 11.5px; color: var(--faint); padding: 16px 24px; max-width: 820px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div class="mdh-flag-header">
+  <h1>FLAG_EDITOR_TITLE</h1>
+  <button class="mdh-reset-btn" id="reset-btn">Reset</button>
+  <button class="mdh-copy-btn" id="copy-btn">Copy Diff</button>
+</div>
+
+<!-- No-JS fallback: plain table -->
+<noscript>
+<div class="mdh-flag-list">
+  <table class="mdh-flag-table">
+    <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>FLAG_NAME_1</code></td>
+        <td>on</td>
+        <td>Description of flag 1 from source.</td>
+      </tr>
+      <tr>
+        <td><code>FLAG_NAME_2</code></td>
+        <td>off</td>
+        <td>Description of flag 2 from source. Depends on FLAG_NAME_1.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</noscript>
+
+<!-- JS-enhanced: toggle cards -->
+<div class="mdh-flag-list" id="flag-list">
+
+  <div class="mdh-flag-card" id="fc-FLAG_NAME_1"
+       data-flag="FLAG_NAME_1" data-default="on" data-deps="">
+    <div class="mdh-toggle-wrap">
+      <label class="mdh-toggle">
+        <input type="checkbox" checked data-flag="FLAG_NAME_1">
+        <span class="mdh-toggle-slider"></span>
+      </label>
+    </div>
+    <div class="mdh-flag-info">
+      <div class="mdh-flag-name">FLAG_NAME_1 <span class="mdh-flag-status on">on</span></div>
+      <div class="mdh-flag-desc">Description of flag 1 from the source.</div>
+      <div class="mdh-flag-warn">Warning: disabling this flag may break FLAG_NAME_2.</div>
+    </div>
+  </div>
+
+  <div class="mdh-flag-card" id="fc-FLAG_NAME_2"
+       data-flag="FLAG_NAME_2" data-default="off" data-deps="FLAG_NAME_1">
+    <div class="mdh-toggle-wrap">
+      <label class="mdh-toggle">
+        <input type="checkbox" data-flag="FLAG_NAME_2">
+        <span class="mdh-toggle-slider"></span>
+      </label>
+    </div>
+    <div class="mdh-flag-info">
+      <div class="mdh-flag-name">FLAG_NAME_2 <span class="mdh-flag-status off">off</span></div>
+      <div class="mdh-flag-desc">Description of flag 2 from source. Depends on FLAG_NAME_1.</div>
+      <div class="mdh-flag-warn">Dependency warning: FLAG_NAME_1 is required.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="mdh-diff-preview">
+  <h3>Current diff vs defaults</h3>
+  <pre id="diff-out">(no changes)</pre>
+</div>
+
+<footer>Source: <code>SOURCE_PATH</code> (markdown remains authoritative; this HTML is a view).</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  window.MDH = window.MDH || {};
+  MDH.copy = function(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).catch(function() { MDH._legacyCopy(text); });
+    } else { MDH._legacyCopy(text); }
+  };
+  MDH._legacyCopy = function(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } finally { ta.remove(); }
+  };
+
+  var defaults = {};
+  var flagList = document.getElementById('flag-list');
+
+  // Build defaults map from DOM
+  flagList.querySelectorAll('.mdh-flag-card').forEach(function(card) {
+    defaults[card.dataset.flag] = card.dataset.default === 'on';
+  });
+
+  function getCurrentState() {
+    var state = {};
+    flagList.querySelectorAll('input[data-flag]').forEach(function(inp) {
+      state[inp.dataset.flag] = inp.checked;
+    });
+    return state;
+  }
+
+  function checkDeps(state) {
+    flagList.querySelectorAll('.mdh-flag-card').forEach(function(card) {
+      var deps = (card.dataset.deps || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+      var flagOn = state[card.dataset.flag];
+      var depViolated = flagOn && deps.some(function(d) { return state[d] === false; });
+      card.classList.toggle('warn-dep', depViolated);
+    });
+  }
+
+  function updateDiff(state) {
+    var lines = [];
+    Object.keys(state).forEach(function(flag) {
+      if (state[flag] !== defaults[flag]) {
+        var from = defaults[flag] ? 'on' : 'off';
+        var to   = state[flag]    ? 'on' : 'off';
+        lines.push('- ' + flag + ': ' + from + ' -> ' + to);
+      }
+    });
+    var pre = document.getElementById('diff-out');
+    // Use textContent to avoid XSS; flag names are from our own DOM, but still safe practice
+    pre.textContent = lines.length ? lines.join('\n') : '(no changes)';
+  }
+
+  function updateStatusBadges(state) {
+    flagList.querySelectorAll('.mdh-flag-card').forEach(function(card) {
+      var flag = card.dataset.flag;
+      var badge = card.querySelector('.mdh-flag-status');
+      if (badge) {
+        badge.textContent = state[flag] ? 'on' : 'off';
+        badge.className = 'mdh-flag-status ' + (state[flag] ? 'on' : 'off');
+      }
+    });
+  }
+
+  function onToggle() {
+    var state = getCurrentState();
+    checkDeps(state);
+    updateDiff(state);
+    updateStatusBadges(state);
+  }
+
+  flagList.querySelectorAll('input[type=checkbox]').forEach(function(inp) {
+    inp.addEventListener('change', onToggle);
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', function() {
+    flagList.querySelectorAll('input[data-flag]').forEach(function(inp) {
+      inp.checked = defaults[inp.dataset.flag] || false;
+    });
+    onToggle();
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', function() {
+    var state = getCurrentState();
+    var lines = ['# Flag diff'];
+    Object.keys(state).forEach(function(flag) {
+      var marker = state[flag] !== defaults[flag] ? '* ' : '  ';
+      lines.push(marker + flag + ': ' + (state[flag] ? 'on' : 'off'));
+    });
+    MDH.copy(lines.join('\n'));
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy Diff'; }, 1800);
+  });
+
+  // Initial render
+  onToggle();
+})();
+</script>
+
+</body>
+</html>
