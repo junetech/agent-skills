@@ -52,10 +52,13 @@ Run `git diff --staged`, then draft a Conventional Commits message:
   - Never count the title yourself. Run the bundled checker, passing every candidate in one call:
 
     ```sh
+    # Linux / macOS
+    python3 <skill-dir>/scripts/check_commit_msg.py '<title>' ['<title>' ...]
+    # Windows
     python <skill-dir>/scripts/check_commit_msg.py '<title>' ['<title>' ...]
     ```
 
-    `<skill-dir>` is this skill's own directory, which the harness reports when it loads the skill. A repo-relative path such as `git-workflow/scripts/...` resolves only inside this repo; the skill is installed outside the repo it runs in. If `python` is missing, use `python3`.
+    `<skill-dir>` is this skill's own directory, which the harness reports when it loads the skill. A repo-relative path such as `git-workflow/scripts/...` resolves only inside this repo; the skill is installed outside the repo it runs in. Use the interpreter named for the current platform: on Linux `python` is often absent or aliased to Python 2, while on Windows `python` is the name the installer puts on PATH.
   - The checker prints one `Title: NN columns ✓` line per candidate — or `✗` plus one line per broken rule — and exits 0 when all pass, 1 otherwise
 - Use imperative mood ("fix", not "fixed")
 - No trailing period
