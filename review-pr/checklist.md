@@ -2,7 +2,7 @@
 
 ## Instructions
 
-Review the `git diff origin/<base>` output for the issues listed below. Be specific — cite `file:line` and suggest fixes. Skip anything that's fine. Only flag real problems.
+Review the complete review set defined in `SKILL.md` for the issues listed below. Be specific — cite `file:line` and suggest fixes. Skip anything that's fine. Only flag real problems.
 
 Language-specific patterns are tagged `[js]`, `[ts]`, `[py]`, `[go]`, `[rs]`, `[rb]`, `[ex]`, `[java]`. Apply only the patterns relevant to the detected language(s). Untagged patterns apply to all languages.
 
@@ -11,18 +11,18 @@ Language-specific patterns are tagged `[js]`, `[ts]`, `[py]`, `[go]`, `[rs]`, `[
 - **Pass 1 (CRITICAL):** SQL & Data Safety, Race Conditions & Concurrency, LLM Output Trust Boundary, Enum & Value Completeness
 - **Pass 2 (INFORMATIONAL):** All remaining categories
 
-All findings get action via Fix-First Review: obvious mechanical fixes are applied automatically, genuinely ambiguous issues are batched into a single user question.
+Give every finding a severity (`CRITICAL` or `INFORMATIONAL`) and a disposition (`FIX` or `ASK`). Mechanical `FIX` items remain recommendations in REVIEW mode and are applied only in FIX mode; `ASK` items require user input. A `POSSIBLE` design label is a low-confidence annotation on an `ASK` item, not a third disposition.
 
 **Output format:**
 
 ```txt
 Pre-Landing Review: N issues (X critical, Y informational)
 
-**AUTO-FIXED:**
-- [file:line] Problem → fix applied
+**SUGGESTED FIXES (REVIEW mode) or APPLIED FIXES (FIX mode):**
+- [SEVERITY][FIX] [file:line] Problem → recommended or applied fix
 
 **NEEDS INPUT:**
-- [file:line] Problem description
+- [SEVERITY][ASK] [file:line] Problem description
   Recommended fix: suggested fix
 ```
 
@@ -203,20 +203,20 @@ CRITICAL (highest severity):        INFORMATIONAL (lower severity):
                                     ├─ Type Coercion at Boundaries
                                     └─ View / Frontend
 
-All findings are actioned via Fix-First Review. Severity determines
-presentation order and classification of AUTO-FIX vs ASK — critical
+All findings are classified by severity and disposition. REVIEW mode is read-only; FIX mode applies only authorized changes. Severity determines
+presentation order and classification of FIX vs ASK — critical
 findings lean toward ASK (they're riskier), informational findings
-lean toward AUTO-FIX (they're more mechanical).
+lean toward FIX (they're more mechanical).
 ```
 
 ---
 
-## Fix-First Heuristic
+## Disposition heuristic
 
-Determines whether the agent auto-fixes a finding or asks the user.
+Determines whether a finding has a mechanical remedy or requires user judgment.
 
 ```txt
-AUTO-FIX (agent fixes without asking):     ASK (needs human judgment):
+FIX (mechanical; recommend in REVIEW mode, apply in FIX mode):     ASK (needs human judgment):
 ├─ Dead code / unused variables            ├─ Security (auth, XSS, injection)
 ├─ N+1 queries (missing batch load)        ├─ Race conditions
 ├─ Stale comments contradicting code       ├─ Design decisions
@@ -227,10 +227,10 @@ AUTO-FIX (agent fixes without asking):     ASK (needs human judgment):
 └─ Inline styles, O(n²) view lookups          behavior
 ```
 
-**Rule of thumb:** If the fix is mechanical and a senior engineer would apply it without discussion, it's AUTO-FIX. If reasonable engineers could disagree, it's ASK.
+**Rule of thumb:** If the fix is mechanical and a senior engineer would apply it without discussion, it's FIX. If reasonable engineers could disagree, it's ASK.
 
 **Critical findings default toward ASK** — they're inherently riskier.
-**Informational findings default toward AUTO-FIX** — they're more mechanical.
+**Informational findings default toward FIX** — they're more mechanical.
 
 ---
 

@@ -1,212 +1,165 @@
 ---
 name: review-pr
 description: |
-  Pre-landing PR / branch review against the base branch. Use when the user wants to
-  review a pull request, audit a diff before pushing or merging, or asks "review my PR",
-  "review this branch", "check before I merge", or similar.
-  Scans for SQL injection and data-safety issues, race conditions and TOCTOU,
+  Read-only pre-landing PR or branch review against its base branch. Use when the user
+  wants to review a pull request, audit a branch diff before pushing or merging, or asks
+  "review my PR", "review this branch", "check before I merge", or similar. Only modify
+  files when the user explicitly asks to fix, apply, address, or otherwise implement
+  review findings. Scans for SQL injection and data-safety issues, races and TOCTOU,
   LLM output trust-boundary violations, enum/state completeness, magic numbers, dead
-  code, crypto weaknesses, time-window bugs, type-coercion at boundaries, and
-  frontend/design anti-patterns when CSS/HTML/JSX changes. Language-agnostic —
-  auto-detects project language(s) and applies relevant patterns. Includes a fix-first
-  flow that auto-applies mechanical fixes and batches ambiguous ones for user approval.
-  NOT for drafting commit messages or reviewing staged changes for a single commit
-  (use git-workflow); NOT for reviewing arbitrary code outside a branch diff.
-compatibility: Requires git and the gh CLI. Designed for Claude Code or hosts that support the AskUserQuestion tool.
-allowed-tools: Bash Read Edit Write Grep Glob AskUserQuestion
+  code, crypto weaknesses, time-window bugs, type coercion, and frontend/design
+  anti-patterns. Language-agnostic. Not for commit-message drafting or staged-only
+  commit review (use git-workflow), nor for arbitrary code outside a branch diff.
+compatibility: Requires git. The gh CLI is optional and improves pull-request base detection.
 ---
 
-## Step 0: Detect base branch
+## Step 0: Select the operating mode
 
-Determine which branch this PR targets.
+Default to **REVIEW mode**, which is read-only. A request to review, audit, inspect, or
+check a PR or branch does not authorize file edits.
 
-1. Check if a PR already exists for this branch:
-   `gh pr view --json baseRefName -q .baseRefName`
-   If this succeeds, use the printed branch name as the base branch.
+Enter **FIX mode** only when the user explicitly asks to fix, apply, address, implement,
+or otherwise change review findings. The permission covers those fixes only; never
+commit, push, open a PR, or make unrelated changes.
 
-2. If no PR exists (command fails), detect the repo's default branch:
-   `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`
+Print `Mode: REVIEW (read-only)` or `Mode: FIX (edits authorized)`.
 
-3. If both commands fail, fall back to `main`.
+## Step 1: Resolve the base branch and comparison ref
 
-Print the detected base branch name. In every subsequent `git diff`, `git log`, and `git fetch` command, substitute the detected branch name wherever the instructions say "the base branch."
+Resolve the intended target without assuming `origin` exists and without silently
+falling back to `main`.
 
----
+1. Record the current branch with `git branch --show-current`. Detached HEAD is allowed.
+2. If `gh` is available, run `gh pr view --json baseRefName -q .baseRefName`. If it
+   succeeds, use that base branch name.
+3. Identify a remote independently of `gh`:
+   - Prefer the current branch's configured upstream remote.
+   - Otherwise prefer `origin` if it exists.
+   - Otherwise use the only configured remote if exactly one exists.
+   - If there are several remaining remotes, do not guess.
+4. If the base branch is still unknown and a remote was selected, resolve its default
+   branch from `refs/remotes/<remote>/HEAD` with `git symbolic-ref`. If that ref is
+   absent, try `git ls-remote --symref <remote> HEAD`; network failure is non-fatal.
+5. If the base is still unknown, inspect `init.defaultBranch` and existing local refs
+   among `main`, `master`, `trunk`, and `develop`. Use a candidate only when it identifies
+   one unambiguous existing branch.
+6. If the base is still unknown or candidates conflict, ask the user for the base branch
+   and wait. Never choose `main` merely because detection failed.
+7. Resolve `<base-ref>` to an actual ref:
+   - With a selected remote, fetch only the base branch. Prefer the updated
+     `<remote>/<base>` ref; if fetch fails, report that the remote ref may be stale.
+   - Without a usable remote ref, use the local `<base>` branch if it exists.
+   - If neither ref exists, report the missing ref and ask the user how to proceed.
 
-## Step 0.5: Detect project language(s)
+Print `Base: <branch> (<base-ref>)`. Use `<base-ref>` in every later comparison.
 
-Run the following to identify what kind of project this is:
+## Step 2: Detect project languages
 
-```bash
-ls package.json go.mod Cargo.toml pyproject.toml setup.py requirements.txt \
-   Gemfile mix.exs pom.xml build.gradle 2>/dev/null
-```
+Inspect repository marker files and activate every applicable language:
 
-Record which files exist. Use this to activate language-specific checklist patterns in Step 4.
-Multiple files may be present (e.g. a Python backend + JS frontend). Detect all of them.
+- JavaScript / TypeScript: `package.json`
+- Python: `pyproject.toml`, `setup.py`, `requirements.txt`
+- Go: `go.mod`
+- Rust: `Cargo.toml`
+- Ruby: `Gemfile`
+- Elixir: `mix.exs`
+- Java / Kotlin: `pom.xml`, `build.gradle`
 
-Language → marker file mapping:
-- **JavaScript / TypeScript**: `package.json`
-- **Python**: `pyproject.toml`, `setup.py`, `requirements.txt`
-- **Go**: `go.mod`
-- **Rust**: `Cargo.toml`
-- **Ruby**: `Gemfile`
-- **Elixir**: `mix.exs`
-- **Java / Kotlin**: `pom.xml`, `build.gradle`
+Print `Languages detected: [list]`.
 
-Print: `Languages detected: [list]`
+## Step 3: Build the complete review set
 
----
+Treat the review set as four explicit, non-overlapping sources:
 
-## Step 1: Check branch
+1. Committed branch changes: `git diff <base-ref>...HEAD`
+2. Staged changes relative to HEAD: `git diff --cached`
+3. Unstaged tracked changes: `git diff`
+4. Untracked, non-ignored files: `git ls-files --others --exclude-standard`
 
-1. Run `git branch --show-current` to get the current branch.
-2. If on the base branch, output: **"Nothing to review — you're on the base branch or have no changes against it."** and stop.
-3. Run `git fetch origin <base> --quiet && git diff origin/<base> --stat` to check if there's a diff. If no diff, output the same message and stop.
+Read every diff in full before reporting findings. Read each reviewable untracked text
+file in full as well. For a binary or impractically large untracked file, inspect its
+type and size, state how it was handled, and do not silently omit it.
 
----
+Build one de-duplicated changed-file list from the four sources. Use that same list for
+language checks, frontend detection, TODO cross-references, and documentation staleness.
+Only output `Nothing to review — no committed, staged, unstaged, or untracked changes
+against <base-ref>.` and stop when all four sources are empty. Being on the base branch
+alone is not a reason to stop when local changes exist.
 
-## Step 2: Read the checklist
+## Step 4: Read the checklists
 
-Read `checklist.md`.
+Read `checklist.md`. If it cannot be read, stop and report the error; do not review
+without it.
 
-**If the file cannot be read, STOP and report the error.** Do not proceed without the checklist.
+If the changed-file list contains `.css`, `.scss`, `.sass`, `.less`, `.html`, `.jsx`,
+`.tsx`, `.svelte`, or `.vue`, also:
 
----
+1. Read root `DESIGN.md` or `design-system.md` when present; documented project choices
+   override generic design heuristics.
+2. Read `design-checklist.md`. If unavailable, continue the code review and report that
+   the design pass was skipped.
+3. Read every changed frontend file in full, including untracked frontend files.
 
-## Step 3: Get the diff
+Skip the design pass silently when no frontend file changed.
 
-Fetch the latest base branch to avoid false positives from stale local state:
+## Step 5: Perform the two-pass review
 
-```bash
-git fetch origin <base> --quiet
-```
+Apply `checklist.md` to the complete review set:
 
-Run `git diff origin/<base>` to get the full diff. This includes both committed and uncommitted changes against the latest base branch.
+1. **CRITICAL:** SQL & Data Safety, Race Conditions & Concurrency, LLM Output Trust
+   Boundary, Enum & Value Completeness
+2. **INFORMATIONAL:** every remaining category
 
----
+Apply only language-specific patterns matching the detected languages. Enum and value
+completeness requires searching outside the diff for every consumer of sibling values,
+then reading each relevant match.
 
-## Step 4: Two-pass review
+For frontend changes, apply `design-checklist.md`. Respect all suppressions and do not
+flag anything already handled elsewhere in the complete review set.
 
-Apply the checklist against the diff in two passes:
+Give every finding two independent labels:
 
-1. **Pass 1 (CRITICAL):** SQL & Data Safety, Race Conditions & Concurrency, LLM Output Trust Boundary, Enum & Value Completeness
-2. **Pass 2 (INFORMATIONAL):** Conditional Side Effects, Magic Numbers & String Coupling, Dead Code & Consistency, LLM Prompt Issues, Test Gaps, Crypto & Entropy, Time Window Safety, Type Coercion, View/Frontend
+- Severity: `CRITICAL` or `INFORMATIONAL`.
+- Disposition: `FIX` for an unambiguous mechanical change, or `ASK` when judgment is
+  required. Low-confidence `POSSIBLE` design findings are confidence annotations, not a
+  third disposition; classify all of them as `ASK`.
 
-**Language-specific patterns:** For each category in the checklist, apply the patterns tagged with the detected language(s) from Step 0.5. Skip patterns tagged for other languages.
+## Step 6: Report or fix findings
 
-**Enum & Value Completeness requires reading code OUTSIDE the diff.** When the diff introduces a new enum value, status, or type constant, use Grep to find all files that reference sibling values, then Read those files to check if the new value is handled. This is the one category where within-diff review is insufficient.
+Follow the output contract in `checklist.md`.
 
-Follow the output format specified in the checklist. Respect the suppressions — do NOT flag items listed in the "DO NOT flag" section.
+### REVIEW mode
 
----
+Do not edit files. Report `FIX` findings as suggested mechanical fixes and `ASK`
+findings as decisions or verification the user must make. Make the report sufficient
+for a later explicit fix request.
 
-## Step 4.5: Design Review (conditional)
+### FIX mode
 
-Check if the diff touches frontend files:
+1. Apply all `FIX` findings and report each changed `file:line` with a terse summary.
+2. Batch every `ASK` finding into one user prompt. Use the host's normal user-input
+   facility when available. Otherwise print one numbered plain-text question with
+   `Fix as recommended` and `Skip` choices, then wait for the reply.
+3. If the execution environment cannot collect a reply, leave `ASK` items unchanged and
+   report them clearly.
+4. Apply only the fixes the user approves. Never infer approval from the original review
+   request.
 
-```bash
-git diff origin/<base> --name-only | grep -E '\.(css|scss|sass|less|html|jsx|tsx|svelte|vue)$'
-```
+## Step 7: Cross-check TODOs and documentation
 
-**If no frontend files changed:** Skip design review silently. No output.
+If root `TODOS.md` exists, note open items the branch closes, work it creates, and related
+context. Skip silently when absent.
 
-**If frontend files changed:**
+For each root Markdown document, check whether the reviewed code changes behavior or a
+workflow it describes. If that document was not updated in the review set, report an
+INFORMATIONAL finding: `Documentation may be stale: [file] describes [feature] but code
+changed in this branch.`
 
-1. Check for `DESIGN.md` or `design-system.md` in the repo root. If found, read it — patterns explicitly blessed there are NOT flagged. If not found, use universal design principles.
+## Important rules
 
-2. Read `design-checklist.md`. If not found, skip design review with a note.
-
-3. Read each changed frontend file in full (not just diff hunks).
-
-4. Apply the design checklist. Classify findings as:
-   - **AUTO-FIX**: mechanical CSS fixes (`outline: none`, `!important`, `font-size < 16px`)
-   - **ASK**: anything requiring design judgment
-   - **POSSIBLE**: low-confidence findings — present as "Possible — verify visually"
-
-Include design findings in the Step 5 Fix-First flow.
-
----
-
-## Step 5: Fix-First Review
-
-**Every finding gets action — not just critical ones.**
-
-Output a summary header: `Pre-Landing Review: N issues (X critical, Y informational)`
-
-### Step 5a: Classify each finding
-
-For each finding, classify as AUTO-FIX or ASK per the Fix-First Heuristic in checklist.md.
-Critical findings lean toward ASK; informational findings lean toward AUTO-FIX.
-
-### Step 5b: Auto-fix all AUTO-FIX items
-
-Apply each fix directly. For each one, output a one-line summary:
-`[AUTO-FIXED] [file:line] Problem → what you did`
-
-### Step 5c: Batch-ask about ASK items
-
-If there are ASK items remaining, present them in ONE AskUserQuestion:
-
-- List each item with a number, the severity label, the problem, and a recommended fix
-- For each item, provide options: A) Fix as recommended, B) Skip
-- Include an overall RECOMMENDATION
-
-Example format:
-```
-I auto-fixed 3 issues. 2 need your input:
-
-1. [CRITICAL] src/db/users.go:88 — Raw string interpolation in SQL query
-   Fix: Use parameterized query with `?` placeholder
-   → A) Fix  B) Skip
-
-2. [INFORMATIONAL] src/api/handler.py:44 — LLM output written to DB without format validation
-   Fix: Add regex check before persisting email field
-   → A) Fix  B) Skip
-
-RECOMMENDATION: Fix both — #1 is exploitable, #2 prevents silent data corruption.
-```
-
-If 3 or fewer ASK items, you may use individual AskUserQuestion calls instead of batching.
-
-### Step 5d: Apply user-approved fixes
-
-Apply fixes for items where the user chose "Fix." Output what was fixed.
-
-If no ASK items exist (everything was AUTO-FIX), skip the question entirely.
-
----
-
-## Step 5.5: TODOS cross-reference
-
-Read `TODOS.md` in the repository root (if it exists). Cross-reference the PR against open TODOs:
-
-- **Does this PR close any open TODOs?** If yes, note: "This PR addresses TODO: <title>"
-- **Does this PR create work that should become a TODO?** If yes, flag as informational.
-- **Are there related TODOs that provide context?** If yes, reference them when discussing related findings.
-
-If `TODOS.md` doesn't exist, skip this step silently.
-
----
-
-## Step 5.6: Documentation staleness check
-
-For each `.md` file in the repo root (README.md, ARCHITECTURE.md, CONTRIBUTING.md, CLAUDE.md, etc.):
-
-1. Check if code changes in the diff affect features or workflows described in that doc.
-2. If the doc was NOT updated in this branch but the code it describes WAS changed, flag it as INFORMATIONAL:
-   `"Documentation may be stale: [file] describes [feature] but code changed in this branch."`
-
-This is informational only — never critical.
-
-If no documentation files exist, skip this step silently.
-
----
-
-## Important Rules
-
-- **Read the FULL diff before commenting.** Do not flag issues already addressed in the diff.
-- **Fix-first, not read-only.** AUTO-FIX items are applied directly. ASK items are only applied after user approval. Never commit, push, or create PRs.
-- **Be terse.** One line problem, one line fix. No preamble.
-- **Only flag real problems.** Skip anything that's fine.
-- **Language patterns are additive.** If a pattern doesn't apply to the detected language, skip it silently. Don't explain what you're skipping.
+- Read the complete review set before commenting.
+- Remain read-only unless the user explicitly requested fixes.
+- Never commit, push, or create a PR.
+- Be terse: one line for the problem and one for the recommended or applied fix.
+- Flag only real problems. Skip anything already addressed in the review set.
+- Apply language patterns additively and skip irrelevant patterns silently.

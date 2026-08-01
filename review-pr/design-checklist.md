@@ -2,9 +2,9 @@
 
 ## Instructions
 
-This checklist applies to **source code in the diff** — not rendered output. Read each changed frontend file (full file, not just diff hunks) and flag anti-patterns.
+This checklist applies to **source code in the complete review set** — not rendered output. Read each changed frontend file (full file, not just diff hunks) and flag anti-patterns.
 
-**Trigger:** Only run this checklist if the diff touches frontend files (detected in SKILL.md Step 4.5). If no frontend files changed, skip silently.
+**Trigger:** Only run this checklist if the changed-file list contains frontend files (detected in `SKILL.md` Step 4). If no frontend files changed, skip silently.
 
 **DESIGN.md calibration:** If `DESIGN.md` or `design-system.md` exists in the repo root, read it first. All findings are calibrated against the project's stated design system. Patterns explicitly blessed in DESIGN.md are NOT flagged. If no DESIGN.md exists, use universal design principles.
 
@@ -22,7 +22,7 @@ Each item is tagged with a detection confidence level:
 
 ## Classification
 
-**AUTO-FIX** (mechanical CSS fixes only — HIGH confidence, no design judgment needed):
+**FIX** (mechanical CSS fixes only — HIGH confidence, no design judgment needed):
 
 - `outline: none` without replacement → add `outline: revert` or `&:focus-visible { outline: 2px solid currentColor; }`
 - `!important` in new CSS → remove and fix specificity
@@ -32,24 +32,24 @@ Each item is tagged with a detection confidence level:
 
 - All AI slop findings, typography structure, spacing choices, interaction state gaps, DESIGN.md violations
 
-**LOW confidence items** → present as "Possible: [description]. Verify visually." Never AUTO-FIX.
+**LOW confidence items** → present as "Possible: [description]. Verify visually." Always use the ASK disposition.
 
 ---
 
 ## Output Format
 
 ```txt
-Design Review: N issues (X auto-fixable, Y need input, Z possible)
+Design Review: N issues (X mechanical, Y need input, Z possible within need input)
 
-**AUTO-FIXED:**
-- [file:line] Problem → fix applied
+**SUGGESTED FIXES (REVIEW mode) or APPLIED FIXES (FIX mode):**
+- [SEVERITY][FIX] [file:line] Problem → recommended or applied fix
 
 **NEEDS INPUT:**
-- [file:line] Problem description
+- [SEVERITY][ASK] [file:line] Problem description
   Recommended fix: suggested fix
 
 **POSSIBLE (verify visually):**
-- [file:line] Possible issue — verify visually
+- [SEVERITY][ASK][POSSIBLE] [file:line] Possible issue — verify visually
 ```
 
 If no issues found: `Design Review: No issues found.`
