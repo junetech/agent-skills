@@ -145,9 +145,9 @@ for a later explicit fix request.
 4. Apply only the fixes the user approves. Never infer approval from the original review
    request.
 
-## Step 7: Cross-check TODOs and documentation
+## Step 7: Cross-check TODO list and documentation
 
-If root `TODOS.md` exists, note open items the branch closes, work it creates, and related
+If root `TODO.md` exists, note open items the branch closes, work it creates, and related
 context. Skip silently when absent.
 
 For each root Markdown document, check whether the reviewed code changes behavior or a
